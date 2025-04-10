@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,12 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "@/components/ui/use-toast";
-import { Scanner, Server, Database, Laptop, Shield, Globe, Network } from "lucide-react";
+import { ScanSearch, Server, Database, Laptop, Shield, Globe, Network } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-// Define the form schema using Zod
 const infrastructureFormSchema = z.object({
   organizationName: z.string().min(2, { message: "Organization name is required" }),
   environmentType: z.enum(["corporate", "cloud", "hybrid"]),
@@ -119,7 +117,7 @@ const InfrastructureForm = ({ onSubmit }: InfrastructureFormProps) => {
     <Card className="cyber-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Scanner className="h-5 w-5 text-cyber-primary" />
+          <ScanSearch className="h-5 w-5 text-cyber-primary" />
           Infrastructure Assessment
         </CardTitle>
         <CardDescription>
@@ -296,7 +294,7 @@ const InfrastructureForm = ({ onSubmit }: InfrastructureFormProps) => {
 
             <div className="space-y-4">
               <h3 className="text-sm font-medium flex items-center gap-2">
-                <Cloud className="h-4 w-4 text-cyber-primary" /> Cloud Services
+                <Globe className="h-4 w-4 text-cyber-primary" /> Cloud Services
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <FormField

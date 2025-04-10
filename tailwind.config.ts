@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,16 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				cyber: {
+					dark: '#0f172a',     // Dark background
+					darker: '#020617',    // Darker background
+					primary: '#3b82f6',   // Primary blue
+					accent: '#8b5cf6',    // Purple accent
+					success: '#10b981',   // Success green
+					warning: '#f59e0b',   // Warning yellow
+					danger: '#ef4444',    // Danger red
+					info: '#06b6d4'       // Info blue
 				}
 			},
 			borderRadius: {
@@ -84,11 +95,20 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-glow': {
+					'0%, 100%': { 
+						boxShadow: '0 0 5px rgba(59, 130, 246, 0.5)' 
+					},
+					'50%': { 
+						boxShadow: '0 0 15px rgba(59, 130, 246, 0.8)' 
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-glow': 'pulse-glow 2s infinite'
 			}
 		}
 	},

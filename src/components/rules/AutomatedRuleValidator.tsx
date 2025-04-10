@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ interface ValidationResult {
 interface Issue {
   type: "error" | "warning" | "info";
   message: string;
-  line?: number;
+  line?: number; // Making line optional to match usage in the code
   severity: "high" | "medium" | "low";
   fix?: string;
 }
@@ -340,6 +341,7 @@ const generateMockValidationResult = (ruleContent: string): ValidationResult => 
   // Generate some random issues
   for (let i = 0; i < issueCount; i++) {
     const randomIssue = { ...possibleIssues[Math.floor(Math.random() * possibleIssues.length)] };
+    // Add the line property here
     randomIssue.line = Math.floor(Math.random() * 15) + 1;
     issues.push(randomIssue as Issue);
   }

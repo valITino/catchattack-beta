@@ -8,35 +8,41 @@ import SigmaGenerator from "./pages/SigmaGenerator";
 import SiemIntegration from "./pages/SiemIntegration";
 import InfrastructureAssessment from "./pages/InfrastructureAssessment";
 import AutomationPipeline from "./pages/AutomationPipeline";
+import CommunityMarketplace from "./pages/CommunityMarketplace";
 
 const router = createBrowserRouter([
   {
+    path: "/",
     element: <AppLayout />,
     errorElement: <NotFound />,
     children: [
       {
-        path: "/",
+        index: true,
         element: <Dashboard />,
       },
       {
-        path: "/emulation",
+        path: "emulation",
         element: <EmulationSettings />,
       },
       {
-        path: "/sigma",
+        path: "sigma",
         element: <SigmaGenerator />,
       },
       {
-        path: "/siem",
+        path: "siem",
         element: <SiemIntegration />,
       },
       {
-        path: "/infrastructure",
+        path: "infrastructure",
         element: <InfrastructureAssessment />,
       },
       {
-        path: "/automation",
+        path: "automation",
         element: <AutomationPipeline />,
+      },
+      {
+        path: "community",
+        element: <CommunityMarketplace />,
       },
     ],
   },

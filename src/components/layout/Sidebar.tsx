@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   Home, Play, FileCode2, Share2, Cog, Server, RefreshCw,
-  AlertOctagon, ArrowRight, PanelRight, ChevronRight, Terminal
+  AlertOctagon, ArrowRight, PanelRight, ChevronRight, ShoppingBasket
 } from "lucide-react";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -151,6 +152,20 @@ export function Sidebar({
                 {!collapsed && <span>SIEM Integration</span>}
               </Button>
             </Link>
+            
+            <Link to="/community">
+              <Button
+                variant="ghost"
+                size={collapsed ? "icon" : "default"}
+                className={cn(
+                  "justify-start w-full",
+                  pathname.includes("/community") && "bg-accent"
+                )}
+              >
+                <ShoppingBasket className={cn("h-5 w-5", !collapsed && "mr-2")} />
+                {!collapsed && <span>Community</span>}
+              </Button>
+            </Link>
 
             <Separator className="my-2" />
 
@@ -158,7 +173,10 @@ export function Sidebar({
               <Button
                 variant="ghost"
                 size={collapsed ? "icon" : "default"}
-                className={cn("justify-start w-full")}
+                className={cn(
+                  "justify-start w-full",
+                  pathname.includes("/settings") && "bg-accent"
+                )}
               >
                 <Cog className={cn("h-5 w-5", !collapsed && "mr-2")} />
                 {!collapsed && <span>Settings</span>}

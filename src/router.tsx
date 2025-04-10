@@ -9,6 +9,7 @@ import SiemIntegration from "./pages/SiemIntegration";
 import InfrastructureAssessment from "./pages/InfrastructureAssessment";
 import AutomationPipeline from "./pages/AutomationPipeline";
 import CommunityMarketplace from "./pages/CommunityMarketplace";
+import Settings from "./pages/Settings";
 
 const router = createBrowserRouter([
   {
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
       {
         path: "community",
         element: <CommunityMarketplace />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
       },
     ],
   },

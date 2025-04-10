@@ -1,73 +1,145 @@
-# Welcome to your Lovable project
+# Detection as Code Platform
 
-## Project info
+> **Automated Adversary Emulation, Sigma Rule Generation, & One-Click SIEM Deployment**
 
-**URL**: https://lovable.dev/projects/c851f7dd-2980-4d97-bdce-242d2cbfc569
+This project provides an **end-to-end** “Detection as Code” approach, surpassing existing solutions by **automating adversary emulation** (aligned with [MITRE ATT&CK](https://attack.mitre.org/)), **generating Sigma rules**, checking for duplicates, and **deploying them to various SIEMs** through a robust **CI/CD pipeline** and intuitive **dashboard**.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Table of Contents
+1. [Overview](#overview)  
+2. [Features](#features)  
+3. [Technologies](#technologies)  
+4. [Project Structure](#project-structure)  
+5. [Installation & Setup](#installation--setup)  
+6. [Usage](#usage)  
+7. [Contributing](#contributing)  
+8. [License](#license)
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c851f7dd-2980-4d97-bdce-242d2cbfc569) and start prompting.
+## Overview
+**Detection as Code Platform** is designed to help security teams:
+- **Continuously test** their defenses using adversary emulation.
+- **Automate** the generation of detection rules (Sigma).
+- **Deploy** detection rules to SIEM platforms (Elastic, Splunk, etc.) with **minimal manual effort**.
+- Easily **integrate** with CI/CD processes for real-time updates and no-hassle deployments.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## Features
+- **Adversary Emulation (MITRE ATT&CK)**
+  - One-click scenario generation.
+  - Scheduling and randomization of testing.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Sigma Rule Generation**
+  - Automated creation post-emulation.
+  - Duplicate checks to avoid overlapping or redundant detections.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **SIEM Integration**
+  - One-click deployment to popular SIEMs (Elastic, Splunk).
+  - Real-time monitoring of deployment status and logs.
 
-Follow these steps:
+- **CI/CD Pipeline**
+  - Automates the testing, rule generation, and deployment cycle.
+  - Detailed logs and error handling.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- **Dashboard & Management Interface**
+  - Real-time overview of adversary emulations.
+  - Organized rule library, with quick actions to deploy or manage rules.
+  - Role-based access and audit logging for compliance.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Technologies
+- **Vite** – Fast bundler and dev server.
+- **TypeScript** – Type-safe development experience.
+- **React** – Frontend library for building modular user interfaces.
+- **Tailwind CSS** – Utility-first CSS framework for rapid UI design.
+- **shadcn-ui** – A set of customizable React components built on Tailwind CSS (if included).
+- **Node.js / Express / Python / .NET** – (Pick one or more, depending on your backend choice).
+- **Sigma** – Detection rule specification.
+- **CI/CD Tools** – GitHub Actions, GitLab CI, or Jenkins (configurable per project needs).
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+---
+
+## Project Structure
+detection-as-code/ ├─ backend/ │ ├─ src/ │ │ └─ ... (Core logic, adversary emulation, rule generation, etc.) │ ├─ tests/ │ ├─ package.json or requirements.txt │ └─ ... ├─ frontend/ │ ├─ public/ │ ├─ src/ │ │ ├─ components/ │ │ ├─ pages/ │ │ └─ services/ │ ├─ package.json │ └─ ... ├─ .env.example ├─ docker-compose.yml (optional) └─ README.md
+
+
+- **backend/** – Handles adversary emulation, Sigma rule generation, and SIEM deployment logic.
+- **frontend/** – Houses the user interface built with React (or your chosen frontend framework).
+- **tests/** – Unit and integration tests.
+
+---
+
+## Installation & Setup
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/your-org/detection-as-code.git
+   cd detection-as-code
+Backend Setup
+
+If using Node.js:
+
+cd backend
+npm install
 npm run dev
-```
+If using Python:
 
-**Edit a file directly in GitHub**
+cd backend
+pip install -r requirements.txt
+python main.py
+(Adjust commands as necessary for your environment.)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Frontend Setup
 
-**Use GitHub Codespaces**
+cd frontend
+npm install
+npm run dev
+The development server typically runs at http://localhost:3000 (or as specified).
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Environment Configuration
 
-## What technologies are used for this project?
+Copy .env.example to .env (in both backend and frontend if needed).
 
-This project is built with:
+Fill in the details for SIEM integrations, database connections, and other secrets.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+(Optional) Docker
 
-## How can I deploy this project?
+If provided, run:
 
-Simply open [Lovable](https://lovable.dev/projects/c851f7dd-2980-4d97-bdce-242d2cbfc569) and click on Share -> Publish.
+docker-compose up --build
+This sets up the entire stack in containers.
 
-## Can I connect a custom domain to my Lovable project?
+Usage
+Access the Dashboard
 
-Yes it is!
+Once the frontend and backend are running, open the browser at the displayed localhost URL.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Adversary Emulation
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Initiate or schedule new emulations from the dashboard.
+
+Monitor logs and results in real time.
+
+Sigma Rule Generation & Deployment
+
+Check newly created rules in the “Detections” or similar section.
+
+Deploy them to your configured SIEM with a single click.
+
+CI/CD Pipeline
+
+Configure automated triggers for your pipeline.
+
+All merges or scheduled intervals can automatically run emulations and deploy rules.
+
+Contributing
+We welcome contributions from the community! Please follow the steps below:
+
+Fork this repo and create a new branch for your feature or bugfix.
+
+Commit your changes with clear and descriptive messages.
+
+Open a Pull Request to the main branch, describing what you’ve changed and why.

@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 import { 
   Settings, PlusCircle, BarChart3, Clock, GitBranch, Webhook,
-  LineChart, CheckCircle2, FileCode2, Database, Play, AlertCircle
+  LineChart, CheckCircle2, FileCode2, Database, Play, AlertCircle,
+  RefreshCw
 } from "lucide-react";
 
 import RandomEmulationGenerator, { EmulationConfig } from "@/components/emulation/RandomEmulationGenerator";

@@ -1,10 +1,9 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   Home, Play, FileCode2, Share2, Cog, Server, RefreshCw,
   AlertOctagon, ArrowRight, PanelRight, ChevronRight, Terminal
@@ -21,7 +20,7 @@ export function Sidebar({
   setCollapsed,
 }: SidebarProps) {
   const { pathname } = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   return (
     <>

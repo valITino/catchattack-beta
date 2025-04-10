@@ -63,7 +63,8 @@ const DeployRuleButton = ({ rule, variant = "default", size = "default" }: Deplo
         toast({
           title: "Partial Deployment",
           description: `Deployed to: ${result.deployedTo.join(", ")}. Failed for: ${result.errors.map(e => e.target).join(", ")}`,
-          variant: "warning",
+          // Changed from "warning" to "destructive" since "warning" is not a valid variant
+          variant: "destructive",
         });
       } else {
         toast({

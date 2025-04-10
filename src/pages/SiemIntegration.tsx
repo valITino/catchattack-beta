@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/components/ui/use-toast";
-import { AlertCircle, Check, ChevronRight, Cloud, Copy, Download, FileCode2, Link, LinkOff, RefreshCw, Server, Settings, Shield, Unlink } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertCircle, Check, ChevronRight, Cloud, Copy, Download, FileCode2, Link, Link2Off, RefreshCw, Server, Settings, Shield, Unlink } from "lucide-react";
 
 // Mock data for SIEM platforms
 const siemPlatforms = [
@@ -152,8 +153,6 @@ const SiemIntegration = () => {
 
   // Handle connecting to a SIEM platform
   const handleConnectPlatform = (platformId: string) => {
-    // In a real implementation, this would open a configuration modal
-    // or redirect to a connection setup page
     toast({
       title: "Connection Initiated",
       description: `Setting up connection to ${siemPlatforms.find(p => p.id === platformId)?.name}`,
@@ -162,14 +161,11 @@ const SiemIntegration = () => {
 
   // Handle rule deployment
   const handleDeployRule = (ruleId: string) => {
-    // In a real implementation, this would call an API to deploy
-    // the sigma rule to the configured SIEM systems
     toast({
       title: "Deployment Started",
       description: "Deploying sigma rule to selected SIEM platforms",
     });
     
-    // Simulate successful deployment after a delay
     setTimeout(() => {
       toast({
         title: "Rule Deployed",
@@ -203,7 +199,6 @@ const SiemIntegration = () => {
       description: `Deploying ${selectedRules.length} rules to ${siemPlatforms.find(p => p.id === selectedPlatform)?.name}`,
     });
 
-    // Simulate successful deployment after a delay
     setTimeout(() => {
       toast({
         title: "Bulk Deployment Complete",
@@ -383,7 +378,7 @@ const SiemIntegration = () => {
                 ) : (
                   <div className="space-y-4">
                     <div className="text-center p-4">
-                      <LinkOff className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                      <Link2Off className="h-12 w-12 text-gray-500 mx-auto mb-2" />
                       <h3 className="font-medium">Not Connected</h3>
                       <p className="text-sm text-gray-400 mb-4">
                         This SIEM platform is not currently connected

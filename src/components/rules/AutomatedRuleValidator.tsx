@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -285,7 +284,6 @@ const AutomatedRuleValidator = ({ onValidationComplete, initialRule }: Automated
   );
 };
 
-// Helper function to generate mock validation results
 const generateMockValidationResult = (ruleContent: string): ValidationResult => {
   // In a real implementation, this would use NLP/AI to analyze the rule
   

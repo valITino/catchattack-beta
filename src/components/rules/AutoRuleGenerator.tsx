@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Lightbulb, Wand2, GitCommit, AlertTriangle, Brain, CheckCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getSeverityColor } from "@/utils/siemUtils";
 
 interface GeneratorOption {
   id: string;
@@ -310,10 +310,7 @@ const AutoRuleGenerator = () => {
   );
 };
 
-// Helper function to simulate generation results
 const simulateGenerationResults = (generationType: string) => {
-  // This would be replaced with actual AI-generated content in a real implementation
-  
   const baseResults = {
     statistics: {
       techniquesCovered: Math.floor(Math.random() * 10) + 5,
@@ -330,7 +327,6 @@ const simulateGenerationResults = (generationType: string) => {
     rules: []
   };
   
-  // Generate different rules based on the selected generator type
   if (generationType === "behavior-analysis") {
     baseResults.rules = [
       {

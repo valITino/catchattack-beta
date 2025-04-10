@@ -10,7 +10,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
-import { FileCode2, Download, Copy, Eye, RefreshCw, Check, X, Search, Filter } from "lucide-react";
+import { 
+  FileCode2, Download, Copy, Eye, RefreshCw, Check, X, Search, Filter, 
+  Cloud, AlertCircle
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const generatedRules = [
   {
@@ -189,6 +193,7 @@ const SigmaGenerator = () => {
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string>("rules");
   const [selectedVulnerability, setSelectedVulnerability] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSelectRule = (rule: any) => {
     setSelectedRule(rule);
@@ -237,21 +242,50 @@ const SigmaGenerator = () => {
     }
   };
 
-  const filteredRules = generatedRules.filter(rule => {
-    const matchesSearch = searchQuery === "" || 
-      rule.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rule.description.toLowerCase().includes(searchQuery.toLowerCase());
+  const checkRuleRedundancy = (ruleName: string, ruleDescription: string) => {
+    const existingRules = generatedRules.filter(
+      rule => 
+        rule.title.toLowerCase() === ruleName.toLowerCase() ||
+        rule.description.toLowerCase() === ruleDescription.toLowerCase()
+    );
     
-    const matchesSeverity = selectedSeverities.length === 0 || 
-      selectedSeverities.includes(rule.severity);
-    
-    const matchesSource = selectedSources.length === 0 || 
-      selectedSources.includes(rule.source);
-    
-    return matchesSearch && matchesSeverity && matchesSource;
-  });
+    return existingRules.length > 0;
+  };
+
+  const handleDeployRuleToSiem = (rule: any) => {
+    toast({
+      title: "Deployment Option",
+      description: "Choose where to deploy this rule",
+      action: (
+        <Button 
+          onClick={() => navigate("/siem")} 
+          className="bg-cyber-primary hover:bg-cyber-primary/90"
+        >
+          Go to SIEM Integration
+        </Button>
+      ),
+    });
+  };
 
   const handleGenerateRule = (vulnerabilityId: string) => {
+    const vulnerability = vulnerabilities.find(v => v.id === vulnerabilityId);
+    
+    if (!vulnerability) return;
+    
+    const isRedundant = checkRuleRedundancy(
+      vulnerability.name, 
+      vulnerability.description
+    );
+    
+    if (isRedundant) {
+      toast({
+        title: "Rule Already Exists",
+        description: "A similar rule already exists in the repository. Avoid creating duplicates.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     toast({
       title: "Rule Generation Started",
       description: "Generating sigma rule from vulnerability data",
@@ -265,7 +299,19 @@ const SigmaGenerator = () => {
     }, 2000);
   };
 
-  const vulnerabilitiesWithoutRules = vulnerabilities.filter(v => !v.hasRule);
+  const filteredRules = generatedRules.filter(rule => {
+    const matchesSearch = searchQuery === "" || 
+      rule.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rule.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesSeverity = selectedSeverities.length === 0 || 
+      selectedSeverities.includes(rule.severity);
+    
+    const matchesSource = selectedSources.length === 0 || 
+      selectedSources.includes(rule.source);
+    
+    return matchesSearch && matchesSeverity && matchesSource;
+  });
 
   return (
     <div className="space-y-6">
@@ -403,6 +449,14 @@ const SigmaGenerator = () => {
                         <CardDescription>{selectedRule.description}</CardDescription>
                       </div>
                       <div className="flex space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          onClick={() => handleDeployRuleToSiem(selectedRule)}
+                          className="bg-cyber-primary hover:bg-cyber-primary/90"
+                        >
+                          <Cloud className="h-4 w-4 mr-1" /> Deploy to SIEM
+                        </Button>
                         <Button size="sm" variant="outline" onClick={handleExportRule}>
                           <Download className="h-4 w-4 mr-1" /> Export
                         </Button>
@@ -500,19 +554,34 @@ const SigmaGenerator = () => {
                       </div>
                       
                       {vuln.hasRule ? (
-                        <Button 
-                          variant="outline" 
-                          className="border-cyber-success text-cyber-success hover:bg-cyber-success/10"
-                          onClick={() => {
-                            const rule = generatedRules.find(r => r.id === vuln.ruleId);
-                            if (rule) {
-                              handleSelectRule(rule);
-                              setActiveTab("rules");
-                            }
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-2" /> View Rule
-                        </Button>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="outline" 
+                            className="border-cyber-success text-cyber-success hover:bg-cyber-success/10"
+                            onClick={() => {
+                              const rule = generatedRules.find(r => r.id === vuln.ruleId);
+                              if (rule) {
+                                handleSelectRule(rule);
+                                setActiveTab("rules");
+                              }
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" /> View Rule
+                          </Button>
+                          
+                          <Button 
+                            variant="default"
+                            onClick={() => {
+                              const rule = generatedRules.find(r => r.id === vuln.ruleId);
+                              if (rule) {
+                                handleDeployRuleToSiem(rule);
+                              }
+                            }}
+                            className="bg-cyber-primary hover:bg-cyber-primary/90"
+                          >
+                            <Cloud className="h-4 w-4 mr-2" /> Deploy Rule
+                          </Button>
+                        </div>
                       ) : (
                         <Button 
                           onClick={() => handleGenerateRule(vuln.id)}

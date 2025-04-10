@@ -7,7 +7,7 @@ import EmulationSettings from "./pages/EmulationSettings";
 import SigmaGenerator from "./pages/SigmaGenerator";
 import SiemIntegration from "./pages/SiemIntegration";
 import InfrastructureAssessment from "./pages/InfrastructureAssessment";
-import AutomationPipeline from "./pages/AutomationPipeline"; // Add our new page
+import AutomationPipeline from "./pages/AutomationPipeline";
 
 const router = createBrowserRouter([
   {

@@ -11,6 +11,7 @@ import AutomationPipeline from "./pages/AutomationPipeline";
 import CommunityMarketplace from "./pages/CommunityMarketplace";
 import Settings from "./pages/Settings";
 import Incidents from "./pages/Incidents";
+import Rules from "./pages/Rules";
 
 const router = createBrowserRouter([
   {
@@ -45,6 +46,10 @@ const router = createBrowserRouter([
       {
         path: "community",
         element: <CommunityMarketplace />,
+      },
+      {
+        path: "rules",
+        element: <Rules />,
       },
       {
         path: "incidents",

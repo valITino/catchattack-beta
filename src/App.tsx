@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import EmulationSettings from "./pages/EmulationSettings";
 import SigmaGenerator from "./pages/SigmaGenerator";
 import SiemIntegration from "./pages/SiemIntegration";
+import InfrastructureAssessment from "./pages/InfrastructureAssessment";
 import NotFound from "./pages/NotFound";
 
 // Layout
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/emulation" element={<EmulationSettings />} />
             <Route path="/sigma" element={<SigmaGenerator />} />
             <Route path="/siem" element={<SiemIntegration />} />
+            <Route path="/infrastructure" element={<InfrastructureAssessment />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

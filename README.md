@@ -80,6 +80,14 @@ detection-as-code/ ├─ backend/ │ ├─ src/ │ │ └─ ... (Core logi
    cd detection-as-code
 Backend Setup
 
+## Installation & Setup
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/your-org/detection-as-code.git
+   cd detection-as-code
+Backend Setup
+
 If using Node.js:
 
 cd backend
@@ -97,7 +105,7 @@ Frontend Setup
 cd frontend
 npm install
 npm run dev
-The development server typically runs at http://localhost:3000 (or as specified).
+The development server typically runs at http://localhost:3000 (or whatever port is specified).
 
 Environment Configuration
 
@@ -115,11 +123,11 @@ This sets up the entire stack in containers.
 Usage
 Access the Dashboard
 
-Once the frontend and backend are running, open the browser at the displayed localhost URL.
+Once both the frontend and backend are running, open your browser at the displayed local URL.
 
 Adversary Emulation
 
-Initiate or schedule new emulations from the dashboard.
+Initiate or schedule emulations from the dashboard.
 
 Monitor logs and results in real time.
 
@@ -136,10 +144,16 @@ Configure automated triggers for your pipeline.
 All merges or scheduled intervals can automatically run emulations and deploy rules.
 
 Contributing
-We welcome contributions from the community! Please follow the steps below:
+We welcome contributions from the community! To contribute:
 
 Fork this repo and create a new branch for your feature or bugfix.
 
-Commit your changes with clear and descriptive messages.
+Commit your changes with clear, descriptive messages.
 
-Open a Pull Request to the main branch, describing what you’ve changed and why.
+Open a Pull Request to the main branch, detailing what you’ve changed and why.
+
+License
+This project is distributed under the MIT License. Feel free to use, modify, and distribute it as per the license terms.
+
+
+By enclosing these instructions in fenced code blocks (```) for commands, you ensure they’re easy to read and follow. Additi

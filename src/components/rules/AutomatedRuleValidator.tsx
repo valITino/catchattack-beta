@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -297,53 +296,56 @@ const generateMockValidationResult = (ruleContent: string): ValidationResult => 
   // Sample issue types to randomly generate
   const possibleIssues = [
     {
-      type: "error",
+      type: "error" as const,
       message: "Missing required field 'detection.condition'",
-      severity: "high",
+      severity: "high" as const,
       fix: "Add a condition field under the detection section"
     },
     {
-      type: "warning",
+      type: "warning" as const,
       message: "Rule may generate false positives",
-      severity: "medium",
+      severity: "medium" as const,
       fix: "Consider adding additional filter conditions"
     },
     {
-      type: "warning",
+      type: "warning" as const,
       message: "Non-standard field name used",
-      severity: "low",
+      severity: "low" as const,
       fix: "Replace with standard field name according to Sigma specification"
     },
     {
-      type: "info",
+      type: "info" as const,
       message: "Consider adding additional context to description",
-      severity: "low"
+      severity: "low" as const
     },
     {
-      type: "error",
+      type: "error" as const,
       message: "Invalid regex pattern",
-      severity: "high",
+      severity: "high" as const,
       fix: "Fix regex syntax error"
     },
     {
-      type: "warning",
+      type: "warning" as const,
       message: "MITRE technique ID format is incorrect",
-      severity: "medium",
+      severity: "medium" as const,
       fix: "Use standard format like T1234.001"
     },
     {
-      type: "info",
+      type: "info" as const,
       message: "Rule could benefit from additional references",
-      severity: "low"
+      severity: "low" as const
     }
   ];
   
   // Generate some random issues
   for (let i = 0; i < issueCount; i++) {
-    const randomIssue = { ...possibleIssues[Math.floor(Math.random() * possibleIssues.length)] };
+    // Create a new issue object and cast it to Issue type
+    const randomIssueTemplate = possibleIssues[Math.floor(Math.random() * possibleIssues.length)];
+    const randomIssue: Issue = { ...randomIssueTemplate };
+    
     // Add the line property here
     randomIssue.line = Math.floor(Math.random() * 15) + 1;
-    issues.push(randomIssue as Issue);
+    issues.push(randomIssue);
   }
   
   // Calculate a score based on issues

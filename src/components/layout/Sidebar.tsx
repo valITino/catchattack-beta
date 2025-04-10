@@ -1,72 +1,198 @@
 
-import { NavLink } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useMobile } from "@/hooks/use-mobile";
 import { 
-  LayoutDashboard, 
-  FlaskConical, 
-  FileCode2, 
-  Database, 
-  Shield, 
-  Settings 
+  Home, Play, FileCode2, Share2, Cog, Server, RefreshCw,
+  AlertOctagon, ArrowRight, PanelRight, ChevronRight, Terminal
 } from "lucide-react";
 
-const Sidebar = () => {
-  const navItems = [
-    { 
-      name: "Dashboard", 
-      path: "/dashboard", 
-      icon: <LayoutDashboard className="h-5 w-5" /> 
-    },
-    { 
-      name: "Emulation", 
-      path: "/emulation", 
-      icon: <FlaskConical className="h-5 w-5" /> 
-    },
-    { 
-      name: "Sigma Rules", 
-      path: "/sigma", 
-      icon: <FileCode2 className="h-5 w-5" /> 
-    },
-    { 
-      name: "SIEM", 
-      path: "/siem", 
-      icon: <Database className="h-5 w-5" /> 
-    },
-  ];
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
+  collapsed?: boolean;
+  setCollapsed: (collapsed: boolean) => void;
+}
+
+export function Sidebar({
+  className,
+  collapsed,
+  setCollapsed,
+}: SidebarProps) {
+  const { pathname } = useLocation();
+  const isMobile = useMobile();
 
   return (
-    <aside className="w-64 h-full bg-cyber-dark border-r border-cyber-primary/20 flex flex-col">
-      <div className="p-4 border-b border-cyber-primary/20 flex items-center gap-2">
-        <Shield className="h-6 w-6 text-cyber-primary" />
-        <span className="font-semibold text-lg">Detection-as-Code</span>
-      </div>
-      
-      <nav className="flex flex-col p-4 gap-1 flex-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
-              isActive 
-                ? "bg-cyber-primary text-white" 
-                : "text-gray-400 hover:bg-cyber-dark/50 hover:text-white"
-            )}
+    <>
+      <div
+        className={cn(
+          "flex flex-col h-screen bg-background overflow-hidden border-r border-border transition-width duration-200",
+          collapsed ? "w-16" : "w-64",
+          className
+        )}
+      >
+        {/* Logo */}
+        <div className={`p-4 flex items-center justify-between ${collapsed ? "justify-center" : ""}`}>
+          {!collapsed && (
+            <Link to="/" className="flex items-center">
+              <div className="text-xl font-bold text-cyber-primary">
+                CyberShield
+              </div>
+            </Link>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+            className={`${collapsed ? "" : "ml-auto"}`}
           >
-            {item.icon}
-            <span>{item.name}</span>
-          </NavLink>
-        ))}
-      </nav>
+            {collapsed ? <PanelRight size={18} /> : <ChevronRight size={18} />}
+          </Button>
+        </div>
 
-      <div className="p-4 border-t border-cyber-primary/20">
-        <button className="w-full flex items-center gap-3 px-3 py-2 text-gray-400 hover:text-white rounded-md">
-          <Settings className="h-5 w-5" />
-          <span>Settings</span>
-        </button>
+        {/* Navigation */}
+        <ScrollArea className="flex-1">
+          <nav className="grid gap-1 p-2">
+            <Link to="/">
+              <Button
+                variant="ghost"
+                size={collapsed ? "icon" : "default"}
+                className={cn(
+                  "justify-start w-full",
+                  pathname === "/" && "bg-accent"
+                )}
+              >
+                <Home className={cn("h-5 w-5", !collapsed && "mr-2")} />
+                {!collapsed && <span>Dashboard</span>}
+              </Button>
+            </Link>
+
+            <Separator className="my-2" />
+            
+            {!collapsed && (
+              <div className="text-xs text-muted-foreground px-2 py-1">
+                Adversary Emulation
+              </div>
+            )}
+            
+            <Link to="/emulation">
+              <Button
+                variant="ghost"
+                size={collapsed ? "icon" : "default"}
+                className={cn(
+                  "justify-start w-full",
+                  pathname.includes("/emulation") && "bg-accent"
+                )}
+              >
+                <Play className={cn("h-5 w-5", !collapsed && "mr-2")} />
+                {!collapsed && <span>Emulation Settings</span>}
+              </Button>
+            </Link>
+            
+            <Link to="/automation">
+              <Button
+                variant="ghost"
+                size={collapsed ? "icon" : "default"}
+                className={cn(
+                  "justify-start w-full",
+                  pathname.includes("/automation") && "bg-accent"
+                )}
+              >
+                <RefreshCw className={cn("h-5 w-5", !collapsed && "mr-2")} />
+                {!collapsed && <span>CI/CD Pipeline</span>}
+              </Button>
+            </Link>
+            
+            <Link to="/infrastructure">
+              <Button
+                variant="ghost"
+                size={collapsed ? "icon" : "default"}
+                className={cn(
+                  "justify-start w-full",
+                  pathname.includes("/infrastructure") && "bg-accent"
+                )}
+              >
+                <Server className={cn("h-5 w-5", !collapsed && "mr-2")} />
+                {!collapsed && <span>Infrastructure</span>}
+              </Button>
+            </Link>
+
+            {!collapsed && (
+              <div className="text-xs text-muted-foreground px-2 py-1 mt-2">
+                Detection Engineering
+              </div>
+            )}
+            <Separator className={cn(collapsed && "my-2")} />
+            
+            <Link to="/sigma">
+              <Button
+                variant="ghost"
+                size={collapsed ? "icon" : "default"}
+                className={cn(
+                  "justify-start w-full",
+                  pathname.includes("/sigma") && "bg-accent"
+                )}
+              >
+                <FileCode2 className={cn("h-5 w-5", !collapsed && "mr-2")} />
+                {!collapsed && <span>Sigma Rules</span>}
+              </Button>
+            </Link>
+            
+            <Link to="/siem">
+              <Button
+                variant="ghost"
+                size={collapsed ? "icon" : "default"}
+                className={cn(
+                  "justify-start w-full",
+                  pathname.includes("/siem") && "bg-accent"
+                )}
+              >
+                <Share2 className={cn("h-5 w-5", !collapsed && "mr-2")} />
+                {!collapsed && <span>SIEM Integration</span>}
+              </Button>
+            </Link>
+
+            <Separator className="my-2" />
+
+            <Link to="/settings">
+              <Button
+                variant="ghost"
+                size={collapsed ? "icon" : "default"}
+                className={cn("justify-start w-full")}
+              >
+                <Cog className={cn("h-5 w-5", !collapsed && "mr-2")} />
+                {!collapsed && <span>Settings</span>}
+              </Button>
+            </Link>
+          </nav>
+        </ScrollArea>
+
+        {!collapsed && (
+          <div className="p-4">
+            <div className="bg-cyber-primary/10 border border-cyber-primary/20 rounded-md p-2">
+              <div className="flex items-center mb-2">
+                <AlertOctagon className="text-cyber-primary h-4 w-4 mr-2" />
+                <span className="text-sm font-medium">Active Alerts</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                3 new threats detected in the last 24 hours
+              </div>
+              <div className="mt-2">
+                <Button variant="link" className="h-auto p-0 text-xs">
+                  View Alerts <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </aside>
+      {isMobile && !collapsed && (
+        <div
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm"
+          onClick={() => setCollapsed(true)}
+        />
+      )}
+    </>
   );
-};
-
-export default Sidebar;
+}

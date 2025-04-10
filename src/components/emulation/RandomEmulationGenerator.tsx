@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
-import { Dices, PieChart, Shuffle } from "lucide-react";
+import { Dices, PieChart, Shuffle, Settings2, Clock } from "lucide-react";
 
 // Mock data for tactics
 const tactics = [
@@ -28,6 +28,7 @@ const tactics = [
 
 interface RandomEmulationGeneratorProps {
   onGenerate: (config: EmulationConfig) => void;
+  automated?: boolean;
 }
 
 export interface EmulationConfig {
@@ -35,21 +36,37 @@ export interface EmulationConfig {
   techniqueCount: number;
   tactics: string[];
   immediate: boolean;
+  automated?: boolean;
+  frequency?: string;
+  deployTargets?: string[];
 }
 
-const RandomEmulationGenerator = ({ onGenerate }: RandomEmulationGeneratorProps) => {
+const RandomEmulationGenerator = ({ onGenerate, automated = false }: RandomEmulationGeneratorProps) => {
   const [complexity, setComplexity] = useState<string>("medium");
   const [techniqueCount, setTechniqueCount] = useState<number>(5);
   const [selectedTactics, setSelectedTactics] = useState<string[]>(
     tactics.filter(t => t.selected).map(t => t.id)
   );
   const [immediate, setImmediate] = useState<boolean>(true);
+  
+  // New states for automation
+  const [isAutomated, setIsAutomated] = useState<boolean>(automated);
+  const [frequency, setFrequency] = useState<string>("daily");
+  const [deployTargets, setDeployTargets] = useState<string[]>(["elastic"]);
 
   const toggleTactic = (tacticId: string) => {
     if (selectedTactics.includes(tacticId)) {
       setSelectedTactics(selectedTactics.filter(id => id !== tacticId));
     } else {
       setSelectedTactics([...selectedTactics, tacticId]);
+    }
+  };
+
+  const toggleDeployTarget = (target: string) => {
+    if (deployTargets.includes(target)) {
+      setDeployTargets(deployTargets.filter(t => t !== target));
+    } else {
+      setDeployTargets([...deployTargets, target]);
     }
   };
 
@@ -67,14 +84,19 @@ const RandomEmulationGenerator = ({ onGenerate }: RandomEmulationGeneratorProps)
       complexity,
       techniqueCount,
       tactics: selectedTactics,
-      immediate
+      immediate,
+      automated: isAutomated,
+      frequency: isAutomated ? frequency : undefined,
+      deployTargets: isAutomated ? deployTargets : undefined
     };
 
     onGenerate(config);
     
     toast({
-      title: "Random Emulation Generated",
-      description: `${techniqueCount} techniques selected across ${selectedTactics.length} tactics with ${complexity} complexity`,
+      title: isAutomated ? "Automated Emulation Pipeline Created" : "Random Emulation Generated",
+      description: isAutomated 
+        ? `${techniqueCount} techniques will run ${frequency} across ${selectedTactics.length} tactics` 
+        : `${techniqueCount} techniques selected across ${selectedTactics.length} tactics with ${complexity} complexity`,
     });
   };
 
@@ -82,11 +104,18 @@ const RandomEmulationGenerator = ({ onGenerate }: RandomEmulationGeneratorProps)
     <Card className="cyber-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Dices className="h-5 w-5 text-cyber-primary" />
-          Random Emulation Generator
+          {automated ? (
+            <Settings2 className="h-5 w-5 text-cyber-primary" />
+          ) : (
+            <Dices className="h-5 w-5 text-cyber-primary" />
+          )}
+          {automated ? "Automated Emulation Pipeline" : "Random Emulation Generator"}
         </CardTitle>
         <CardDescription>
-          Generate random attack patterns based on MITRE ATT&CK
+          {automated 
+            ? "Configure automated emulation pipelines with CI/CD integration"
+            : "Generate random attack patterns based on MITRE ATT&CK"
+          }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -145,23 +174,105 @@ const RandomEmulationGenerator = ({ onGenerate }: RandomEmulationGeneratorProps)
           </div>
         </div>
         
-        <div className="flex items-center space-x-2 pt-2">
-          <Checkbox 
-            id="immediate"
-            checked={immediate}
-            onCheckedChange={(checked) => setImmediate(checked as boolean)}
-            className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
-          />
-          <Label htmlFor="immediate" className="cursor-pointer">
-            Execute immediately after generation
-          </Label>
-        </div>
+        {automated && (
+          <>
+            <div className="space-y-2 pt-2">
+              <Label>Execution Frequency</Label>
+              <Select
+                value={frequency}
+                onValueChange={setFrequency}
+              >
+                <SelectTrigger className="bg-cyber-darker border-cyber-primary/20">
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hourly">Hourly</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2 pt-2">
+              <Label>Deploy Rules To</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="elastic"
+                    checked={deployTargets.includes("elastic")}
+                    onCheckedChange={() => toggleDeployTarget("elastic")}
+                    className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
+                  />
+                  <Label htmlFor="elastic" className="text-sm cursor-pointer">
+                    Elastic Security
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="splunk"
+                    checked={deployTargets.includes("splunk")}
+                    onCheckedChange={() => toggleDeployTarget("splunk")}
+                    className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
+                  />
+                  <Label htmlFor="splunk" className="text-sm cursor-pointer">
+                    Splunk
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="sentinel"
+                    checked={deployTargets.includes("sentinel")}
+                    onCheckedChange={() => toggleDeployTarget("sentinel")}
+                    className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
+                  />
+                  <Label htmlFor="sentinel" className="text-sm cursor-pointer">
+                    Microsoft Sentinel
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="qradar"
+                    checked={deployTargets.includes("qradar")}
+                    onCheckedChange={() => toggleDeployTarget("qradar")}
+                    className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
+                  />
+                  <Label htmlFor="qradar" className="text-sm cursor-pointer">
+                    IBM QRadar
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {!automated && (
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox 
+              id="immediate"
+              checked={immediate}
+              onCheckedChange={(checked) => setImmediate(checked as boolean)}
+              className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
+            />
+            <Label htmlFor="immediate" className="cursor-pointer">
+              Execute immediately after generation
+            </Label>
+          </div>
+        )}
 
         <Button 
           onClick={handleGenerate} 
           className="w-full mt-4 bg-cyber-primary hover:bg-cyber-primary/90"
         >
-          <Shuffle className="mr-2 h-4 w-4" /> Generate Random Emulation
+          {automated ? (
+            <>
+              <Clock className="mr-2 h-4 w-4" /> Create Automated Pipeline
+            </>
+          ) : (
+            <>
+              <Shuffle className="mr-2 h-4 w-4" /> Generate Random Emulation
+            </>
+          )}
         </Button>
       </CardContent>
     </Card>

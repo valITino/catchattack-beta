@@ -10,6 +10,7 @@ import InfrastructureAssessment from "./pages/InfrastructureAssessment";
 import AutomationPipeline from "./pages/AutomationPipeline";
 import CommunityMarketplace from "./pages/CommunityMarketplace";
 import Settings from "./pages/Settings";
+import Incidents from "./pages/Incidents";
 
 const router = createBrowserRouter([
   {
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
       {
         path: "community",
         element: <CommunityMarketplace />,
+      },
+      {
+        path: "incidents",
+        element: <Incidents />,
       },
       {
         path: "settings",

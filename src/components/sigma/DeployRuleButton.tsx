@@ -12,9 +12,15 @@ interface DeployRuleButtonProps {
   rule: SigmaRule;
   variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
   size?: "default" | "sm" | "lg" | "icon";
+  className?: string;
 }
 
-const DeployRuleButton = ({ rule, variant = "default", size = "default" }: DeployRuleButtonProps) => {
+const DeployRuleButton = ({ 
+  rule, 
+  variant = "default", 
+  size = "default",
+  className
+}: DeployRuleButtonProps) => {
   const [isDeploying, setIsDeploying] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTargets, setSelectedTargets] = useState<Record<string, boolean>>({
@@ -63,7 +69,6 @@ const DeployRuleButton = ({ rule, variant = "default", size = "default" }: Deplo
         toast({
           title: "Partial Deployment",
           description: `Deployed to: ${result.deployedTo.join(", ")}. Failed for: ${result.errors.map(e => e.target).join(", ")}`,
-          // Changed from "warning" to "destructive" since "warning" is not a valid variant
           variant: "destructive",
         });
       } else {
@@ -94,10 +99,10 @@ const DeployRuleButton = ({ rule, variant = "default", size = "default" }: Deplo
         variant={variant}
         size={size}
         disabled={rule.deployed}
-        className={rule.deployed ? "opacity-50 cursor-not-allowed" : ""}
+        className={`${rule.deployed ? "opacity-50 cursor-not-allowed" : ""} ${className || ""}`}
       >
-        <Upload className="mr-2 h-4 w-4" />
-        {rule.deployed ? "Deployed" : "Deploy to SIEM"}
+        <Upload className={`${size !== "icon" ? "mr-2" : ""} h-4 w-4`} />
+        {size !== "icon" && (rule.deployed ? "Deployed" : "Deploy to SIEM")}
       </Button>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

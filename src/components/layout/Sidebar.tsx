@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   Home, Play, FileCode2, Share2, Cog, Server, RefreshCw,
-  AlertOctagon, ArrowRight, PanelRight, ChevronRight, ShoppingBasket
+  AlertOctagon, ArrowRight, PanelRight, ChevronRight, ShoppingBasket, AlertTriangle
 } from "lucide-react";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -153,6 +153,20 @@ export function Sidebar({
               </Button>
             </Link>
             
+            <Link to="/incidents">
+              <Button
+                variant="ghost"
+                size={collapsed ? "icon" : "default"}
+                className={cn(
+                  "justify-start w-full",
+                  pathname.includes("/incidents") && "bg-accent"
+                )}
+              >
+                <AlertTriangle className={cn("h-5 w-5", !collapsed && "mr-2")} />
+                {!collapsed && <span>Incidents</span>}
+              </Button>
+            </Link>
+            
             <Link to="/community">
               <Button
                 variant="ghost"
@@ -196,8 +210,14 @@ export function Sidebar({
                 3 new threats detected in the last 24 hours
               </div>
               <div className="mt-2">
-                <Button variant="link" className="h-auto p-0 text-xs">
-                  View Alerts <ArrowRight className="h-3 w-3 ml-1" />
+                <Button 
+                  variant="link" 
+                  className="h-auto p-0 text-xs"
+                  asChild
+                >
+                  <Link to="/incidents">
+                    View Alerts <ArrowRight className="h-3 w-3 ml-1" />
+                  </Link>
                 </Button>
               </div>
             </div>

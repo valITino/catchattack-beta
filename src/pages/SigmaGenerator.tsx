@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
 import { FileCode2, Download, Copy, Eye, RefreshCw, Check, X, Search, Filter } from "lucide-react";
 
-// Sample generated sigma rules
 const generatedRules = [
   {
     id: "rule-001",
@@ -127,7 +125,6 @@ tags:
   },
 ];
 
-// Vulnerabilities from emulations
 const vulnerabilities = [
   {
     id: "vuln-001",
@@ -193,18 +190,15 @@ const SigmaGenerator = () => {
   const [activeTab, setActiveTab] = useState<string>("rules");
   const [selectedVulnerability, setSelectedVulnerability] = useState<string | null>(null);
 
-  // Handle rule selection
   const handleSelectRule = (rule: any) => {
     setSelectedRule(rule);
     setRuleContent(rule.rule);
   };
 
-  // Handle rule content change
   const handleRuleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setRuleContent(e.target.value);
   };
 
-  // Handle saving updated rule
   const handleSaveRule = () => {
     toast({
       title: "Rule Updated",
@@ -212,7 +206,6 @@ const SigmaGenerator = () => {
     });
   };
 
-  // Handle copying rule to clipboard
   const handleCopyRule = () => {
     navigator.clipboard.writeText(ruleContent);
     toast({
@@ -221,16 +214,13 @@ const SigmaGenerator = () => {
     });
   };
 
-  // Handle rule export
   const handleExportRule = () => {
-    // In a real implementation, this would trigger a download
     toast({
       title: "Rule Exported",
       description: "Sigma rule exported as YAML file",
     });
   };
 
-  // Toggle severity filter
   const toggleSeverityFilter = (severity: string) => {
     if (selectedSeverities.includes(severity)) {
       setSelectedSeverities(selectedSeverities.filter(s => s !== severity));
@@ -239,7 +229,6 @@ const SigmaGenerator = () => {
     }
   };
 
-  // Toggle source filter
   const toggleSourceFilter = (source: string) => {
     if (selectedSources.includes(source)) {
       setSelectedSources(selectedSources.filter(s => s !== source));
@@ -248,7 +237,6 @@ const SigmaGenerator = () => {
     }
   };
 
-  // Filter rules based on search and filters
   const filteredRules = generatedRules.filter(rule => {
     const matchesSearch = searchQuery === "" || 
       rule.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -263,10 +251,7 @@ const SigmaGenerator = () => {
     return matchesSearch && matchesSeverity && matchesSource;
   });
 
-  // Generate a rule from a vulnerability
   const handleGenerateRule = (vulnerabilityId: string) => {
-    // In a real implementation, this would call an API to generate
-    // a sigma rule based on the vulnerability
     toast({
       title: "Rule Generation Started",
       description: "Generating sigma rule from vulnerability data",
@@ -276,12 +261,10 @@ const SigmaGenerator = () => {
       toast({
         title: "Rule Generated",
         description: "New sigma rule has been created and added to the repository",
-        variant: "success",
       });
     }, 2000);
   };
 
-  // Filtered vulnerabilities (only those without rules)
   const vulnerabilitiesWithoutRules = vulnerabilities.filter(v => !v.hasRule);
 
   return (
@@ -554,7 +537,6 @@ const SigmaGenerator = () => {
   );
 };
 
-// Helper function to get severity color classes
 const getSeverityColor = (severity: string) => {
   switch (severity.toLowerCase()) {
     case 'critical':

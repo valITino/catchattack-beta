@@ -2,7 +2,7 @@
 
 > **Automated Adversary Emulation, Sigma Rule Generation, & One-Click SIEM Deployment**
 
-This project provides an **end-to-end** “Detection as Code” approach, surpassing existing solutions by **automating adversary emulation** (aligned with [MITRE ATT&CK](https://attack.mitre.org/)), **generating Sigma rules**, checking for duplicates, and **deploying them to various SIEMs** through a robust **CI/CD pipeline** and intuitive **dashboard**.
+This project provides an **end-to-end** “Detection as Code” approach, surpassing existing solutions by **automating adversary emulation** (aligned with [MITRE ATT&CK](https://attack.mitre.org/)), **generating Sigma rules**, checking for duplicates, and **deploying them to various SIEMs** through a robust **CI/CD pipeline** and an intuitive **dashboard**.
 
 ---
 
@@ -20,140 +20,147 @@ This project provides an **end-to-end** “Detection as Code” approach, surpas
 
 ## Overview
 **Detection as Code Platform** is designed to help security teams:
-- **Continuously test** their defenses using adversary emulation.
+- **Continuously test** their defenses with adversary emulations.
 - **Automate** the generation of detection rules (Sigma).
-- **Deploy** detection rules to SIEM platforms (Elastic, Splunk, etc.) with **minimal manual effort**.
+- **Deploy** those detection rules to SIEM platforms (Elastic, Splunk, etc.) with **minimal manual effort**.
 - Easily **integrate** with CI/CD processes for real-time updates and no-hassle deployments.
 
 ---
 
 ## Features
-- **Adversary Emulation (MITRE ATT&CK)**
-  - One-click scenario generation.
-  - Scheduling and randomization of testing.
+- **Adversary Emulation (MITRE ATT&CK)**  
+  - One-click scenario generation.  
+  - Scheduling and randomization for continuous testing.
 
-- **Sigma Rule Generation**
-  - Automated creation post-emulation.
+- **Sigma Rule Generation**  
+  - Automated creation of rules post-emulation.  
   - Duplicate checks to avoid overlapping or redundant detections.
 
-- **SIEM Integration**
-  - One-click deployment to popular SIEMs (Elastic, Splunk).
+- **SIEM Integration**  
+  - One-click deployment to popular SIEMs (Elastic, Splunk).  
   - Real-time monitoring of deployment status and logs.
 
-- **CI/CD Pipeline**
-  - Automates the testing, rule generation, and deployment cycle.
-  - Detailed logs and error handling.
+- **CI/CD Pipeline**  
+  - Automates testing, rule generation, and deployment.  
+  - Provides logs and error handling for visibility.
 
-- **Dashboard & Management Interface**
-  - Real-time overview of adversary emulations.
-  - Organized rule library, with quick actions to deploy or manage rules.
-  - Role-based access and audit logging for compliance.
+- **Dashboard & Management Interface**  
+  - Real-time overview of adversary emulations and rule generation.  
+  - Organized rule library with quick actions to deploy or manage rules.  
+  - Role-based access control and audit logging.
 
 ---
 
 ## Technologies
-- **Vite** – Fast bundler and dev server.
-- **TypeScript** – Type-safe development experience.
-- **React** – Frontend library for building modular user interfaces.
-- **Tailwind CSS** – Utility-first CSS framework for rapid UI design.
-- **shadcn-ui** – A set of customizable React components built on Tailwind CSS (if included).
-- **Node.js / Express / Python / .NET** – (Pick one or more, depending on your backend choice).
-- **Sigma** – Detection rule specification.
-- **CI/CD Tools** – GitHub Actions, GitLab CI, or Jenkins (configurable per project needs).
+- **Vite** – A fast and opinionated build tool with dev server support.  
+- **TypeScript** – Strong typing for safer and more reliable code.  
+- **React** – A powerful library for building component-based UIs.  
+- **Tailwind CSS** – Utility-first CSS framework for rapid UI development.  
+- **shadcn-ui** (if included) – A set of customizable React components built on Tailwind CSS.  
+- **Node.js / Python / .NET** – Depending on backend choice.  
+- **Sigma** – Detection rule format.  
+- **CI/CD Tools** – GitHub Actions, GitLab CI, Jenkins, or similar.
 
 ---
 
 ## Project Structure
-detection-as-code/ ├─ backend/ │ ├─ src/ │ │ └─ ... (Core logic, adversary emulation, rule generation, etc.) │ ├─ tests/ │ ├─ package.json or requirements.txt │ └─ ... ├─ frontend/ │ ├─ public/ │ ├─ src/ │ │ ├─ components/ │ │ ├─ pages/ │ │ └─ services/ │ ├─ package.json │ └─ ... ├─ .env.example ├─ docker-compose.yml (optional) └─ README.md
 
+detection-as-code/
+├─ backend/
+│  ├─ src/
+│  │  └─ ... (Core logic: adversary emulation, rule generation, SIEM deployment, etc.)
+│  ├─ tests/
+│  ├─ package.json or requirements.txt
+│  └─ ...
+├─ frontend/
+│  ├─ public/
+│  ├─ src/
+│  │  ├─ components/
+│  │  ├─ pages/
+│  │  └─ services/
+│  ├─ package.json
+│  └─ ...
+├─ .env.example
+├─ docker-compose.yml (optional)
 
-- **backend/** – Handles adversary emulation, Sigma rule generation, and SIEM deployment logic.
-- **frontend/** – Houses the user interface built with React (or your chosen frontend framework).
-- **tests/** – Unit and integration tests.
+- **backend/** – Contains core functionality for emulations, rule generation, and SIEM integrations.  
+- **frontend/** – Houses the React application (or chosen framework) for the user interface.  
+- **tests/** – Contains unit/integration tests for both backend and frontend code.
 
 ---
 
 ## Installation & Setup
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/your-org/detection-as-code.git
-   cd detection-as-code
-Backend Setup
-
-## Installation & Setup
 
 1. **Clone the Repository**
    ```bash
    git clone https://github.com/your-org/detection-as-code.git
    cd detection-as-code
-Backend Setup
+2. **Backend Setup**
 
-If using Node.js:
+**If using Node.js:**
 
 cd backend
 npm install
 npm run dev
-If using Python:
+
+**If using Python:**
 
 cd backend
 pip install -r requirements.txt
 python main.py
-(Adjust commands as necessary for your environment.)
+*(Adjust commands as necessary for your environment.)*
 
-Frontend Setup
+**Frontend Setup**
 
 cd frontend
 npm install
 npm run dev
-The development server typically runs at http://localhost:3000 (or whatever port is specified).
+By default, the frontend will run at http://localhost:3000 (or as configured).
 
-Environment Configuration
+4. **Environment Configuration**
 
 Copy .env.example to .env (in both backend and frontend if needed).
 
-Fill in the details for SIEM integrations, database connections, and other secrets.
+Fill in details for SIEM integrations, database connections, and other secrets.
 
-(Optional) Docker
+5. **(Optional) Docker**
 
-If provided, run:
+If provided, you can run the entire stack with:
 
 docker-compose up --build
-This sets up the entire stack in containers.
+This will spin up containers for both the backend and frontend.
 
-Usage
+**Usage**
 Access the Dashboard
 
-Once both the frontend and backend are running, open your browser at the displayed local URL.
+Open your browser to the local URL where the frontend is served (e.g., http://localhost:3000).
 
 Adversary Emulation
 
-Initiate or schedule emulations from the dashboard.
+Initiate or schedule emulations through the dashboard.
 
 Monitor logs and results in real time.
 
 Sigma Rule Generation & Deployment
 
-Check newly created rules in the “Detections” or similar section.
+Automatically generate Sigma rules when an emulation completes.
 
-Deploy them to your configured SIEM with a single click.
+View new rules in the "Detections" section and deploy them to your configured SIEM with a single click.
 
 CI/CD Pipeline
 
-Configure automated triggers for your pipeline.
+Configure automated triggers for your pipeline (e.g., merges to main, scheduled intervals).
 
-All merges or scheduled intervals can automatically run emulations and deploy rules.
+Upon execution, the pipeline runs emulations, generates rules, checks for duplicates, and deploys them automatically.
 
-Contributing
-We welcome contributions from the community! To contribute:
+**Contributing**
+We welcome contributions from the community. To contribute:
 
-Fork this repo and create a new branch for your feature or bugfix.
+1. Fork the repository and create a new branch for your feature or bugfix.
 
-Commit your changes with clear, descriptive messages.
+2. Commit your changes with clear and descriptive messages.
 
-Open a Pull Request to the main branch, detailing what you’ve changed and why.
+3. Open a Pull Request to the main branch, describing what you’ve changed and why.
 
 License
-This project is distributed under the MIT License. Feel free to use, modify, and distribute it as per the license terms.
-
-
-By enclosing these instructions in fenced code blocks (```) for commands, you ensure they’re easy to read and follow. Additi
+This project is distributed under the MIT License. You’re free to use, modify, and distribute it in accordance with the license terms.

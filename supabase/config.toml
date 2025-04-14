@@ -98,7 +98,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.ai-mitre-techniques]
-verify_jwt = true
+verify_jwt = false
 
 # Configure Postgres migrations
 [migrations]

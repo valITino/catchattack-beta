@@ -76,3 +76,24 @@ export interface AiPredictiveSchedulingRequest {
   techniqueIds: string[];
   tenantId: string;
 }
+
+// Enhanced types for MITRE ATT&CK framework
+export interface MitreAttackTechnique {
+  id: string;
+  name: string;
+  tactic: string;
+  description: string;
+  detection?: string;
+  platforms?: string[];
+  dataSources?: string[];
+  mitigation?: string;
+  references?: string[];
+}
+
+export interface MitreAttackResponse {
+  techniques: MitreAttackTechnique[];
+  timestamp: string;
+  source: string;
+  version: string;
+  cached?: boolean;
+}

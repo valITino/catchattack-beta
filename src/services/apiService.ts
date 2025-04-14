@@ -1,4 +1,3 @@
-
 import { supabase, getCurrentTenantId } from '@/utils/supabase';
 import type { 
   EmulationRequest, 
@@ -239,16 +238,13 @@ export const apiService = {
       
     if (error) throw new Error(`Error fetching user tenants: ${error.message}`);
     
-    // Properly handle the nested structure returned by Supabase
-    return (data || []).map(item => {
-      // Each item has a 'role' property and a 'tenants' object (not an array)
-      return {
-        id: item.tenants ? item.tenants.id : '',
-        name: item.tenants ? item.tenants.name : '',
-        description: item.tenants ? item.tenants.description : undefined,
-        role: item.role,
-      };
-    });
+    // Transform the data structure
+    return (data || []).map(item => ({
+      id: item.tenants?.id || '',
+      name: item.tenants?.name || '',
+      description: item.tenants?.description,
+      role: item.role,
+    }));
   },
   
   /**

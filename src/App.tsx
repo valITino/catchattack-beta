@@ -15,14 +15,18 @@ const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 5, // 5 minutes
       retry: 2,
       refetchOnWindowFocus: import.meta.env.DEV ? false : true,
-      onError: (error) => {
-        logger.error('Query error:', error);
+      meta: {
+        onError: (error: Error) => {
+          logger.error('Query error:', error);
+        },
       },
     },
     mutations: {
       retry: 1,
-      onError: (error) => {
-        logger.error('Mutation error:', error);
+      meta: {
+        onError: (error: Error) => {
+          logger.error('Mutation error:', error);
+        },
       },
     },
   },

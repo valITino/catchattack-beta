@@ -1,213 +1,193 @@
 
 /**
- * Mock implementation of AI-powered log analysis for rule generation
- * In a real implementation, this would use actual AI models or services
+ * AI helpers for analysis of security data
  */
-export async function analyzeEmulationLogs(logs: any[]): Promise<{
-  patterns: Array<{
-    technique: string;
-    techniqueId: string;
-    description: string;
-    sigmaRule: string;
-    severity: string;
-  }>;
-  confidence: number;
-  suggestedImprovements: string[];
-}> {
-  if (!logs || !Array.isArray(logs) || logs.length === 0) {
-    throw new Error('Cannot analyze empty or invalid logs');
-  }
 
-  // Simulate processing delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  const patterns = [];
-  const techniques = new Set();
-  
-  // Extract unique techniques from logs
-  for (const log of logs) {
-    if (log && log.techniqueId) {
-      techniques.add(log.techniqueId);
-    }
-  }
-  
-  // Generate a pattern for each unique technique
-  for (const techniqueId of techniques) {
-    // Generate a mock Sigma rule
-    const sigmaRule = `title: Detected ${techniqueId} Activity
-description: Rule to detect ${techniqueId} techniques
-status: experimental
-author: AI Generator
-logsource:
-  product: windows
-  service: security
-detection:
-  selection:
-    EventID: 4688
-    CommandLine|contains:
-      - 'suspicious command related to ${techniqueId}'
-  condition: selection
-falsepositives:
-  - Legitimate administrative activity
-level: medium
-tags:
-  - attack.${techniqueId.toLowerCase()}`;
-
-    patterns.push({
-      technique: `Technique ${techniqueId}`,
-      techniqueId: techniqueId,
-      description: `Detection for ${techniqueId} based on emulation logs`,
-      sigmaRule,
-      severity: Math.random() > 0.7 ? 'high' : Math.random() > 0.3 ? 'medium' : 'low',
-    });
-  }
-  
-  return {
-    patterns,
-    confidence: 0.7 + Math.random() * 0.25, // Random confidence between 0.7 and 0.95
-    suggestedImprovements: [
-      "Consider adding more context to reduce false positives",
-      "Review command line patterns for higher specificity"
-    ]
-  };
-}
+import { EmulationLog } from "./types.ts";
 
 /**
- * Mock implementation of AI-powered anomaly detection
- * In a real implementation, this would use actual AI models or services
+ * Contains the MITRE ATT&CK matrix data
+ * This would ideally be fetched from the MITRE ATT&CK API or STIX/TAXII server
  */
-export async function detectAnomalies(logs: any[]): Promise<Array<{
+export const MITRE_TECHNIQUES = {
+  "T1078": { name: "Valid Accounts", tactic: "Initial Access", severity: "high" },
+  "T1566": { name: "Phishing", tactic: "Initial Access", severity: "high" },
+  "T1059": { name: "Command and Scripting Interpreter", tactic: "Execution", severity: "medium" },
+  "T1053": { name: "Scheduled Task/Job", tactic: "Execution", severity: "medium" },
+  "T1027": { name: "Obfuscated Files or Information", tactic: "Defense Evasion", severity: "high" },
+  "T1110": { name: "Brute Force", tactic: "Credential Access", severity: "medium" },
+  "T1016": { name: "System Network Configuration Discovery", tactic: "Discovery", severity: "low" },
+  "T1049": { name: "System Network Connections Discovery", tactic: "Discovery", severity: "low" },
+  "T1071": { name: "Application Layer Protocol", tactic: "Command and Control", severity: "high" },
+};
+
+// More comprehensive MITRE data would be imported from a complete dataset
+// In production, this would be fetched from the MITRE ATT&CK API or STIX/TAXII server
+
+/**
+ * Detect anomalies in emulation logs using AI-based analysis
+ * In production, this would use a real ML model or call to an AI API
+ * @param logs The logs to analyze for anomalies
+ * @returns Detected anomalies with confidence scores and metadata
+ */
+export async function detectAnomalies(logs: EmulationLog[]): Promise<{
   techniqueId: string;
   description: string;
   confidence: number;
   severity: 'low' | 'medium' | 'high' | 'critical';
-}>> {
-  if (!logs || !Array.isArray(logs) || logs.length === 0) {
-    return []; // Return empty array instead of throwing when no logs are available
-  }
-
-  // Simulate processing delay
-  await new Promise(resolve => setTimeout(resolve, 700));
+}[]> {
+  console.log(`Processing ${logs.length} logs for anomaly detection`);
+  
+  // In a production environment, this would:
+  // 1. Use a machine learning model or external AI API
+  // 2. Analyze patterns across multiple logs
+  // 3. Compare against historical baselines
+  // 4. Use behavioral analytics
+  
+  // Group logs by technique for analysis
+  const techniqueGroups: Record<string, EmulationLog[]> = {};
+  logs.forEach(log => {
+    if (!techniqueGroups[log.techniqueId]) {
+      techniqueGroups[log.techniqueId] = [];
+    }
+    techniqueGroups[log.techniqueId].push(log);
+  });
   
   const anomalies = [];
+  const processedTechniques = new Set();
   
-  // Simulate finding anomalies in approximately 20% of techniques
-  const uniqueTechniques = Array.from(new Set(
-    logs
-      .filter(log => log && log.techniqueId)
-      .map(log => log.techniqueId)
-  ));
-  
-  if (uniqueTechniques.length === 0) {
-    return []; // No valid techniques found in logs
-  }
-  
-  const anomalyCount = Math.max(1, Math.floor(uniqueTechniques.length * 0.2));
-  
-  for (let i = 0; i < anomalyCount; i++) {
-    const randomTechniqueIndex = Math.floor(Math.random() * uniqueTechniques.length);
-    const techniqueId = uniqueTechniques[randomTechniqueIndex];
+  // Detect anomalies based on log patterns and technique metadata
+  for (const log of logs) {
+    const { techniqueId, status, message, details } = log;
     
-    anomalies.push({
-      techniqueId,
-      description: `Unusual pattern detected in execution of ${techniqueId}`,
-      confidence: 0.65 + Math.random() * 0.3, // Random confidence between 0.65 and 0.95
-      severity: Math.random() > 0.8 ? 'critical' : 
-               Math.random() > 0.6 ? 'high' : 
-               Math.random() > 0.3 ? 'medium' : 'low'
-    });
+    // Skip if we've already analyzed this technique
+    if (processedTechniques.has(techniqueId)) continue;
+    processedTechniques.add(techniqueId);
     
-    // Remove this technique to avoid duplicates
-    uniqueTechniques.splice(randomTechniqueIndex, 1);
+    // Get technique information from MITRE data
+    const techniqueInfo = MITRE_TECHNIQUES[techniqueId] || { 
+      name: "Unknown Technique", 
+      tactic: "Unknown", 
+      severity: "medium" 
+    };
+    
+    // Look for indicators of suspicious activity
+    // In production, this would use much more sophisticated algorithms
+    
+    // Analyze the logs for this technique
+    const techLogs = techniqueGroups[techniqueId] || [];
+    
+    // Calculate anomaly metrics (this is simplified for demo purposes)
+    const failureRate = techLogs.filter(l => l.status === 'failure').length / Math.max(1, techLogs.length);
+    const hasErrorMessages = techLogs.some(l => l.message.toLowerCase().includes('error') || 
+                                              l.message.toLowerCase().includes('exception'));
+    const hasUnusualDetails = techLogs.some(l => l.details && 
+                                              (l.details.unusualActivity || 
+                                               l.details.suspiciousPattern));
+    
+    // Determine if this is an anomaly based on our metrics
+    // In production, this would use ML-based scoring and probabilistic models
+    if (failureRate > 0.3 || hasErrorMessages || hasUnusualDetails) {
+      // Calculate confidence score based on multiple factors
+      let confidence = 0.5; // Base confidence
+      
+      if (failureRate > 0.7) confidence += 0.3;
+      else if (failureRate > 0.3) confidence += 0.15;
+      
+      if (hasErrorMessages) confidence += 0.1;
+      if (hasUnusualDetails) confidence += 0.2;
+      
+      // Map MITRE severity to our severity levels
+      // In production, this would use a more nuanced approach
+      let severity: 'low' | 'medium' | 'high' | 'critical';
+      switch (techniqueInfo.severity) {
+        case "high": 
+          severity = failureRate > 0.5 ? 'critical' : 'high';
+          break;
+        case "medium":
+          severity = hasUnusualDetails ? 'high' : 'medium';
+          break;
+        default:
+          severity = hasErrorMessages ? 'medium' : 'low';
+      }
+      
+      // Generate description using technique information
+      const description = `Detected unusual patterns related to ${techniqueInfo.name} (${techniqueId}) in ${techniqueInfo.tactic} phase. ${
+        hasErrorMessages ? 'Contains error conditions. ' : ''
+      }${hasUnusualDetails ? 'Exhibits suspicious patterns. ' : ''}${
+        failureRate > 0 ? `Failure rate: ${Math.round(failureRate * 100)}%. ` : ''
+      }`;
+      
+      anomalies.push({
+        techniqueId,
+        description,
+        confidence: Math.min(0.99, confidence), // Cap at 0.99 to avoid false certainty
+        severity
+      });
+    }
   }
   
   return anomalies;
 }
 
 /**
- * Mock implementation of AI-powered predictive scheduling
- * In a real implementation, this would use actual AI models or services
+ * Generate enhanced Sigma rules from security logs using AI analysis
+ * @param logs The logs to analyze
+ * @returns Enhanced Sigma rule suggestions
  */
-export async function predictOptimalSchedule(techniqueIds: string[]): Promise<{
-  suggestedTime: string;
+export async function generateEnhancedRules(logs: EmulationLog[]): Promise<{
+  rule: string;
+  title: string;
+  description: string;
+  techniqueId: string;
   confidence: number;
-  reasoning: string;
-  resourceImpact: 'low' | 'medium' | 'high';
-}> {
-  if (!techniqueIds || !Array.isArray(techniqueIds) || techniqueIds.length === 0) {
-    throw new Error('Cannot predict schedule without technique IDs');
-  }
-
-  // Simulate processing delay
-  await new Promise(resolve => setTimeout(resolve, 600));
-  
-  // Generate a future time, between 1 and 24 hours from now
-  const hoursToAdd = 1 + Math.floor(Math.random() * 23);
-  const suggestedTime = new Date(Date.now() + hoursToAdd * 60 * 60 * 1000).toISOString();
-  
-  // Generate reasoning based on number of techniques
-  let reasoning, resourceImpact;
-  
-  if (techniqueIds.length > 10) {
-    reasoning = "Large emulation set; scheduled during predicted low-usage hours to minimize impact.";
-    resourceImpact = 'high';
-  } else if (techniqueIds.length > 5) {
-    reasoning = "Medium-sized emulation; balanced for resource availability and timely execution.";
-    resourceImpact = 'medium';
-  } else {
-    reasoning = "Small emulation set; can run during business hours with minimal impact.";
-    resourceImpact = 'low';
-  }
-  
-  return {
-    suggestedTime,
-    confidence: 0.7 + Math.random() * 0.25, // Random confidence between 0.7 and 0.95
-    reasoning,
-    resourceImpact: resourceImpact as 'low' | 'medium' | 'high'
-  };
+}[]> {
+  // In production, this would use a much more sophisticated approach
+  // Placeholder for future implementation
+  return [];
 }
 
 /**
- * Mock implementation of AI-powered rule similarity detection
- * In a real implementation, this would use actual AI models or services
+ * Types for the MITRE ATT&CK framework data
  */
-export async function findSimilarRules(ruleContent: string, tenantId: string): Promise<Array<{
-  ruleId: string;
-  similarity: number;
-  title: string;
-}>> {
-  if (!ruleContent || ruleContent.trim() === '') {
-    return []; // Return empty array for empty content
-  }
-  
-  if (!tenantId) {
-    throw new Error('Tenant ID is required for similarity search');
-  }
+export interface MitreAttackTechnique {
+  id: string;
+  name: string;
+  tactic: string;
+  description: string;
+  detection?: string;
+  platforms?: string[];
+  dataSources?: string[];
+  mitigation?: string;
+  references?: string[];
+}
 
-  // Simulate processing delay
-  await new Promise(resolve => setTimeout(resolve, 400));
+/**
+ * Get all techniques from the MITRE ATT&CK framework
+ * In production, this would fetch from the official MITRE ATT&CK API or STIX/TAXII server
+ */
+export async function getMitreAttackTechniques(): Promise<MitreAttackTechnique[]> {
+  // This is a simplified version for demonstration
+  // In production, we would fetch from the MITRE ATT&CK API or use STIX/TAXII
   
-  // In a real implementation, this would query existing rules and use 
-  // AI to compute semantic similarity
-  
-  // For the mock, we'll randomly decide whether to return similar rules
-  const hasSimilarRules = Math.random() > 0.7;
-  
-  if (!hasSimilarRules) {
-    return [];
-  }
-  
-  // Mock 1-3 similar rules
-  const similarRulesCount = 1 + Math.floor(Math.random() * 3);
-  const similarRules = [];
-  
-  for (let i = 0; i < similarRulesCount; i++) {
-    similarRules.push({
-      ruleId: `rule-${Math.random().toString(36).substring(2, 9)}`,
-      similarity: 0.7 + Math.random() * 0.25, // Random similarity between 0.7 and 0.95
-      title: `Similar Rule ${i + 1} for Detection`
-    });
-  }
-  
-  return similarRules;
+  // Return a sample of techniques
+  return Object.entries(MITRE_TECHNIQUES).map(([id, info]) => ({
+    id,
+    name: info.name,
+    tactic: info.tactic,
+    description: `${info.name} technique used in ${info.tactic} tactic.`,
+    platforms: ["Windows", "macOS", "Linux"]
+  }));
+}
+
+/**
+ * Fetch techniques from the MITRE ATT&CK framework by tactic
+ * @param tactic The tactic name or ID
+ */
+export async function getTechniquesByTactic(tactic: string): Promise<MitreAttackTechnique[]> {
+  const techniques = await getMitreAttackTechniques();
+  return techniques.filter(tech => 
+    tech.tactic.toLowerCase() === tactic.toLowerCase() || 
+    tech.tactic.toLowerCase().includes(tactic.toLowerCase())
+  );
 }

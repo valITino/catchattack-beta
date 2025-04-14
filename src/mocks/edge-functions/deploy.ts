@@ -17,7 +17,7 @@ export async function handleDeployRequest(body: {
   // Simulate success with some failures for demo purposes
   const deployedRules = deployRequest.ruleIds.map(ruleId => ({
     ruleId,
-    status: Math.random() > 0.15 ? 'success' : 'failure',
+    status: Math.random() > 0.15 ? 'success' as const : 'failure' as const,
     message: Math.random() > 0.15 ? undefined : 'Failed to deploy rule'
   }));
   

@@ -25,7 +25,7 @@ export async function handleEmulationRequest(body: {
       command: `mock_command_for_${techniqueId}`,
       output: `Mock output for ${techniqueId}`
     }
-  }));
+  } as const));
   
   const result: EmulationResult = {
     id: uuidv4(),

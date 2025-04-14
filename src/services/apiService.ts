@@ -1,3 +1,4 @@
+
 import { supabase, getCurrentTenantId } from '@/utils/supabase';
 import type { 
   EmulationRequest, 
@@ -238,13 +239,26 @@ export const apiService = {
       
     if (error) throw new Error(`Error fetching user tenants: ${error.message}`);
     
-    // Transform the data structure
-    return (data || []).map(item => ({
-      id: item.tenants?.id || '',
-      name: item.tenants?.name || '',
-      description: item.tenants?.description,
-      role: item.role,
-    }));
+    // Transform the data structure, ensuring we're accessing properties correctly
+    return (data || []).map(item => {
+      // Make sure tenants exists before trying to access its properties
+      if (!item.tenants) {
+        return {
+          id: '',
+          name: '',
+          description: undefined,
+          role: item.role,
+        };
+      }
+      
+      // Now we can safely access the properties
+      return {
+        id: item.tenants.id,
+        name: item.tenants.name,
+        description: item.tenants.description,
+        role: item.role,
+      };
+    });
   },
   
   /**

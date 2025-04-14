@@ -70,3 +70,6 @@ export const router = createBrowserRouter([
     element: <NotFound />,
   },
 ]);
+
+// Default export of the router
+export default router;

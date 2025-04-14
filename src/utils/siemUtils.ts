@@ -1,5 +1,31 @@
 
 /**
+ * SIEM Platform Interface
+ */
+export interface SiemPlatform {
+  id: string;
+  name: string;
+  description: string;
+  connected: boolean;
+  status: string;
+  rulesDeployed: number;
+  lastSync: string | null;
+}
+
+/**
+ * Deployable Rule Interface
+ */
+export interface DeployableRule {
+  id: string;
+  title: string;
+  description: string;
+  severity: string;
+  source: string;
+  dateCreated: string;
+  deployedTo: string[];
+}
+
+/**
  * Gets the appropriate color styling for a severity level
  * @param severity The severity level as a string
  * @returns CSS class string for styling
@@ -17,6 +43,73 @@ export const getSeverityColor = (severity: string) => {
     default:
       return "bg-gray-600/20 text-gray-400 border-gray-600";
   }
+};
+
+/**
+ * Gets the appropriate color styling for a status level
+ * @param status The status level as a string
+ * @returns CSS class string for styling
+ */
+export const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'active':
+    case 'online':
+    case 'connected':
+      return "text-cyber-success";
+    case 'warning':
+    case 'degraded':
+      return "text-cyber-warning";
+    case 'error':
+    case 'offline':
+    case 'disconnected':
+      return "text-cyber-danger";
+    default:
+      return "text-gray-400";
+  }
+};
+
+/**
+ * Connect to a SIEM platform
+ * @param platformId The SIEM platform ID
+ * @param platformName The SIEM platform name
+ * @returns Connection result
+ */
+export const connectToSiem = async (platformId: string, platformName: string): Promise<{success: boolean; message: string}> => {
+  // Simulate API call
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const success = Math.random() > 0.2; // 80% success rate for demo purposes
+      
+      resolve({
+        success,
+        message: success 
+          ? `Successfully connected to ${platformName}` 
+          : `Failed to connect to ${platformName}: Authentication error`
+      });
+    }, 1500);
+  });
+};
+
+/**
+ * Deploy a Sigma rule to a SIEM platform
+ * @param ruleId The rule ID to deploy
+ * @param platformId The platform ID to deploy to
+ * @returns Deployment result
+ */
+export const deploySigmaRuleToSiem = async (ruleId: string, platformId: string): Promise<{success: boolean; message: string}> => {
+  // Simulate API call
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const success = Math.random() > 0.1; // 90% success rate for demo purposes
+      
+      resolve({
+        success,
+        message: success 
+          ? `Rule deployed successfully to platform ${platformId}` 
+          : `Failed to deploy rule to platform ${platformId}: Invalid rule format`
+      });
+    }, 2000);
+  });
 };
 
 /**

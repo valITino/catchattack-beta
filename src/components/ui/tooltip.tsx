@@ -41,4 +41,27 @@ const TooltipContent = React.forwardRef<
 ))
 TooltipContent.displayName = TooltipPrimitive.Content.displayName
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+// Create a default provider with common configuration
+const DefaultTooltipProvider: React.FC<{
+  children: React.ReactNode;
+  delayDuration?: number;
+}> = ({ 
+  children, 
+  delayDuration = 300 
+}) => {
+  return (
+    <TooltipProvider delayDuration={delayDuration}>
+      {children}
+    </TooltipProvider>
+  );
+};
+
+// Export the default provider for easy access
+export { 
+  DefaultTooltipProvider,
+  Tooltip, 
+  TooltipTrigger, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipArrow 
+}

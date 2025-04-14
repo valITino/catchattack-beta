@@ -1,8 +1,14 @@
-# Detection as Code Platform
+
+# CatchAttack - Detection as Code Platform
 
 > **Automated Adversary Emulation, Sigma Rule Generation, & One-Click SIEM Deployment**
 
-This project provides an **end-to-end** “Detection as Code” approach, surpassing existing solutions by **automating adversary emulation** (aligned with [MITRE ATT&CK](https://attack.mitre.org/)), **generating Sigma rules**, checking for duplicates, and **deploying them to various SIEMs** through a robust **CI/CD pipeline** and an intuitive **dashboard**.
+This project provides an **end-to-end** "Detection as Code" approach, surpassing existing solutions by **automating adversary emulation** (aligned with [MITRE ATT&CK](https://attack.mitre.org/)), **generating Sigma rules**, checking for duplicates, and **deploying them to various SIEMs** through a robust **CI/CD pipeline** and an intuitive **dashboard**.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Code Style: ESLint](https://img.shields.io/badge/Code%20Style-ESLint-blueviolet)](https://eslint.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.0-blue)](https://reactjs.org/)
 
 ---
 
@@ -13,13 +19,14 @@ This project provides an **end-to-end** “Detection as Code” approach, surpas
 4. [Project Structure](#project-structure)  
 5. [Installation & Setup](#installation--setup)  
 6. [Usage](#usage)  
-7. [Contributing](#contributing)  
-8. [License](#license)
+7. [Development](#development)
+8. [Contributing](#contributing)  
+9. [License](#license)
 
 ---
 
 ## Overview
-**Detection as Code Platform** is designed to help security teams:
+**CatchAttack** is designed to help security teams:
 - **Continuously test** their defenses with adversary emulations.
 - **Automate** the generation of detection rules (Sigma).
 - **Deploy** those detection rules to SIEM platforms (Elastic, Splunk, etc.) with **minimal manual effort**.
@@ -56,36 +63,43 @@ This project provides an **end-to-end** “Detection as Code” approach, surpas
 - **TypeScript** – Strong typing for safer and more reliable code.  
 - **React** – A powerful library for building component-based UIs.  
 - **Tailwind CSS** – Utility-first CSS framework for rapid UI development.  
-- **shadcn-ui** (if included) – A set of customizable React components built on Tailwind CSS.  
-- **Node.js / Python / .NET** – Depending on backend choice.  
+- **shadcn-ui** – A set of customizable React components built on Tailwind CSS.  
+- **React Query** – Data fetching and state management.
 - **Sigma** – Detection rule format.  
-- **CI/CD Tools** – GitHub Actions, GitLab CI, Jenkins, or similar.
+- **CI/CD Tools** – GitHub Actions, GitLab CI, or similar.
 
 ---
 
 ## Project Structure
 
-detection-as-code/
-├─ backend/
-│  ├─ src/
-│  │  └─ ... (Core logic: adversary emulation, rule generation, SIEM deployment, etc.)
-│  ├─ tests/
-│  ├─ package.json or requirements.txt
-│  └─ ...
-├─ frontend/
-│  ├─ public/
-│  ├─ src/
-│  │  ├─ components/
-│  │  ├─ pages/
-│  │  └─ services/
-│  ├─ package.json
-│  └─ ...
-├─ .env.example
-├─ docker-compose.yml (optional)
-
-- **backend/** – Contains core functionality for emulations, rule generation, and SIEM integrations.  
-- **frontend/** – Houses the React application (or chosen framework) for the user interface.  
-- **tests/** – Contains unit/integration tests for both backend and frontend code.
+```
+catchattack/
+├─ src/                          # Source code
+│  ├─ components/                # Reusable UI components
+│  │  ├─ detection/             # Detection-related components
+│  │  ├─ emulation/             # Emulation-related components
+│  │  ├─ layout/                # Layout components (sidebar, header, etc.)
+│  │  ├─ mitre/                 # MITRE ATT&CK visualization components
+│  │  ├─ rules/                 # Rule management components
+│  │  ├─ siem/                  # SIEM integration components
+│  │  ├─ sigma/                 # Sigma rule components
+│  │  ├─ tenant/                # Tenant management components
+│  │  ├─ ui/                    # Base UI components (buttons, cards, etc.)
+│  │  └─ ...
+│  ├─ config/                    # Configuration files
+│  ├─ hooks/                     # Custom React hooks
+│  ├─ lib/                       # Supporting utilities and libraries
+│  ├─ pages/                     # Page components
+│  ├─ services/                  # API clients and services
+│  ├─ types/                     # TypeScript type definitions
+│  └─ utils/                     # Utility functions
+├─ public/                       # Static assets
+├─ tests/                        # Tests
+├─ .github/                      # GitHub configuration
+│  └─ workflows/                 # GitHub Actions workflows
+├─ .env.example                  # Example environment variables
+└─ ...                           # Config files
+```
 
 ---
 
@@ -93,74 +107,103 @@ detection-as-code/
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/your-org/detection-as-code.git
-   cd detection-as-code
-2. **Backend Setup**
+   git clone https://github.com/valITino/catchattack-beta.git
+   cd catchattack-beta
+   ```
 
-**If using Node.js:**
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-cd backend
-npm install
-npm run dev
+3. **Set Up Environment Variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit the `.env` file and add your configuration.
 
-**If using Python:**
+4. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+   The application will be available at http://localhost:3000
 
-cd backend
-pip install -r requirements.txt
-python main.py
-*(Adjust commands as necessary for your environment.)*
+5. **Build for Production**
+   ```bash
+   npm run build
+   ```
 
-**Frontend Setup**
+---
 
-cd frontend
-npm install
-npm run dev
-By default, the frontend will run at http://localhost:3000 (or as configured).
+## Usage
 
-4. **Environment Configuration**
+### Dashboard
 
-Copy .env.example to .env (in both backend and frontend if needed).
+The dashboard provides a high-level overview of:
+- Active emulations
+- Detection rule coverage
+- Recent activities
+- SIEM integration status
 
-Fill in details for SIEM integrations, database connections, and other secrets.
+### Adversary Emulation
 
-5. **(Optional) Docker**
+1. Navigate to the Emulation page
+2. Select techniques from the MITRE ATT&CK matrix or use the automated generator
+3. Configure emulation parameters
+4. Start the emulation and monitor results
 
-If provided, you can run the entire stack with:
+### Rule Generation
 
-docker-compose up --build
-This will spin up containers for both the backend and frontend.
+1. After an emulation completes, navigate to the Rules page
+2. Review automatically generated rules
+3. Customize rules as needed
+4. Save to your rule library
 
-**Usage**
-Access the Dashboard
+### SIEM Deployment
 
-Open your browser to the local URL where the frontend is served (e.g., http://localhost:3000).
+1. Navigate to the SIEM Integration page
+2. Connect your SIEM platforms
+3. Select rules to deploy
+4. Monitor deployment status
 
-Adversary Emulation
+---
 
-Initiate or schedule emulations through the dashboard.
+## Development
 
-Monitor logs and results in real time.
+### Code Style
 
-Sigma Rule Generation & Deployment
+We use ESLint and Prettier for code style. Run the linter:
 
-Automatically generate Sigma rules when an emulation completes.
+```bash
+npm run lint
+```
 
-View new rules in the "Detections" section and deploy them to your configured SIEM with a single click.
+### Testing
 
-CI/CD Pipeline
+Run the test suite:
 
-Configure automated triggers for your pipeline (e.g., merges to main, scheduled intervals).
+```bash
+npm test
+```
 
-Upon execution, the pipeline runs emulations, generates rules, checks for duplicates, and deploys them automatically.
+### Creating New Components
 
-**Contributing**
+1. Create a new file in the appropriate subdirectory under `src/components/`
+2. Follow the existing component patterns
+3. Export your component
+4. Import and use it in your pages or other components
+
+---
+
+## Contributing
 We welcome contributions from the community. To contribute:
 
 1. Fork the repository and create a new branch for your feature or bugfix.
-
 2. Commit your changes with clear and descriptive messages.
+3. Ensure your code follows our style guidelines and passes all tests.
+4. Open a Pull Request to the main branch, describing what you've changed and why.
 
-3. Open a Pull Request to the main branch, describing what you’ve changed and why.
+Please see our [Contributing Guidelines](CONTRIBUTING.md) for more details.
 
-License
-This project is distributed under the MIT License. You’re free to use, modify, and distribute it in accordance with the license terms.
+## License
+This project is distributed under the MIT License. You're free to use, modify, and distribute it in accordance with the license terms.

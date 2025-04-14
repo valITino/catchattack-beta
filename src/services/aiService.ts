@@ -1,4 +1,3 @@
-
 import { supabase } from '@/utils/supabase';
 import { baseService } from './baseService';
 import type { SigmaRule, EmulationResult, EmulationLog } from '@/types/backend';
@@ -51,28 +50,51 @@ export const aiService = {
       confidence: number;
       severity: 'low' | 'medium' | 'high' | 'critical';
     }[];
+    timestamp?: string;
+    processedLogsCount?: number;
   }> {
     const tenantId = baseService.getTenantId();
     
     if (!logs || !Array.isArray(logs) || logs.length === 0) {
       console.warn('Attempted to detect anomalies with empty or invalid logs');
-      return { anomalies: [] };
+      return { 
+        anomalies: [],
+        timestamp: new Date().toISOString(),
+        processedLogsCount: 0
+      };
     }
     
-    console.log(`Detecting anomalies in ${logs.length} logs`);
+    console.log(`Detecting anomalies in ${logs.length} logs for tenant ${tenantId}`);
     
-    // Call to Supabase Edge Function
-    const { data, error } = await supabase.functions.invoke('ai-anomaly-detection', {
-      body: { 
-        logs,
-        tenantId
+    try {
+      // Call to Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('ai-anomaly-detection', {
+        body: { 
+          logs,
+          tenantId
+        }
+      });
+      
+      if (error) {
+        console.error('Anomaly detection error:', error);
+        throw new Error(`Error detecting anomalies: ${error.message}`);
       }
-    });
-    
-    if (error) throw new Error(`Error detecting anomalies: ${error.message}`);
-    if (!data) throw new Error('No data returned from anomaly detection service');
-    
-    return data;
+      
+      if (!data || !data.anomalies) {
+        console.warn('No anomaly data returned from service or invalid response structure');
+        return { 
+          anomalies: [],
+          timestamp: new Date().toISOString(),
+          processedLogsCount: logs.length
+        };
+      }
+      
+      console.log(`Successfully detected ${data.anomalies.length} anomalies`);
+      return data;
+    } catch (error) {
+      console.error('Exception in anomaly detection:', error);
+      throw new Error(`Failed to detect anomalies: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   },
   
   /**

@@ -17,20 +17,24 @@ serve(async (req) => {
     const { logs, tenantId } = await req.json();
     
     if (!logs || !Array.isArray(logs) || logs.length === 0) {
+      console.error("Invalid logs data received:", logs);
       return new Response(
         JSON.stringify({ 
           error: "Missing or invalid logs parameter",
-          details: "The logs parameter must be a non-empty array"
+          details: "The logs parameter must be a non-empty array",
+          anomalies: [] // Return empty anomalies array for consistent response structure
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    if (!tenantId) {
+    if (!tenantId || typeof tenantId !== 'string') {
+      console.error("Missing or invalid tenant ID:", tenantId);
       return new Response(
         JSON.stringify({ 
-          error: "Missing tenant ID",
-          details: "A valid tenant ID is required for this operation"
+          error: "Missing or invalid tenant ID",
+          details: "A valid tenant ID string is required for this operation",
+          anomalies: [] // Return empty anomalies array for consistent response structure
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -44,7 +48,11 @@ serve(async (req) => {
     console.log(`Found ${anomalyResults.length} anomalies`);
     
     return new Response(
-      JSON.stringify({ anomalies: anomalyResults }),
+      JSON.stringify({ 
+        anomalies: anomalyResults,
+        timestamp: new Date().toISOString(),
+        processedLogsCount: logs.length
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
@@ -55,7 +63,8 @@ serve(async (req) => {
       JSON.stringify({ 
         error: "Failed to process anomaly detection request",
         message: error.message,
-        stack: error.stack
+        stack: process.env.NODE_ENV === 'production' ? undefined : error.stack,
+        anomalies: [] // Return empty anomalies array for consistent response structure
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { apiService } from '@/services/apiService';
+import { tenantService } from '@/services/tenantService';
 import { setCurrentTenantId, getCurrentTenantId } from '@/utils/supabase';
 import { toast } from '@/components/ui/use-toast';
 
@@ -43,7 +43,7 @@ export function TenantSelector() {
   useEffect(() => {
     const loadTenants = async () => {
       try {
-        const tenantsList = await apiService.getUserTenants();
+        const tenantsList = await tenantService.getUserTenants();
         setTenants(tenantsList);
         
         // Select the current tenant from local storage or use the first one
@@ -92,13 +92,13 @@ export function TenantSelector() {
     }
 
     try {
-      const result = await apiService.createTenant({
+      const result = await tenantService.createTenant({
         name: newTenantData.name.trim(),
         description: newTenantData.description.trim() || undefined,
       });
 
       // Fetch the updated tenant list
-      const updatedTenants = await apiService.getUserTenants();
+      const updatedTenants = await tenantService.getUserTenants();
       setTenants(updatedTenants);
 
       // Find and select the newly created tenant

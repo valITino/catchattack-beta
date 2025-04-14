@@ -1,21 +1,23 @@
+
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { 
-  Shield, AlertTriangle, CheckCircle, Play, Bell, Upload, 
-  RefreshCw, Filter, Calendar, ChevronRight
+  Shield, AlertTriangle, Play
 } from "lucide-react";
 import MitreMatrix from "@/components/mitre/MitreMatrix";
 import { detectionService } from "@/services/detectionService";
 import TenantHeader from "@/components/layout/TenantHeader";
-import { EmulationResult, EmulationLog } from "@/types/backend";
+import { EmulationResult } from "@/types/backend";
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from "@/services/apiService";
+
+// Import our new components
+import CoverageAnalysis from "@/components/detection/CoverageAnalysis";
+import DetectionRules from "@/components/detection/DetectionRules";
+import AnomalyDisplay from "@/components/detection/AnomalyDisplay";
+import SimulationPanel from "@/components/detection/SimulationPanel";
 
 const DetectionCenter = () => {
   const [selectedTab, setSelectedTab] = useState<string>("coverage");
@@ -124,17 +126,6 @@ const DetectionCenter = () => {
     }
   };
 
-  // Function to get severity badge variant based on severity level
-  const getSeverityVariant = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'destructive';
-      case 'high': return 'destructive';
-      case 'medium': return 'secondary';
-      case 'low': return 'secondary';
-      default: return 'outline';
-    }
-  };
-
   // Run gap analysis when the coverage tab is selected
   useEffect(() => {
     if (selectedTab === "coverage" && coveredTechniques.length > 0) {
@@ -168,93 +159,17 @@ const DetectionCenter = () => {
         {/* Coverage Analysis Tab */}
         <TabsContent value="coverage" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="col-span-1">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center">
-                  <Shield className="h-5 w-5 mr-2 text-green-500" />
-                  Coverage Summary
-                </CardTitle>
-                <CardDescription>Detection coverage analysis</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoading ? (
-                  <div className="space-y-2 animate-pulse">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
-                  </div>
-                ) : emulationResults.length === 0 ? (
-                  <div className="text-center py-6">
-                    <div className="mb-2">No emulation results found</div>
-                    <p className="text-sm text-muted-foreground">
-                      Run an emulation to analyze detection coverage
-                    </p>
-                    <Button variant="outline" size="sm" className="mt-4">
-                      <Play className="h-4 w-4 mr-2" />
-                      Run New Emulation
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <div className="text-xl font-bold">
-                        {coveredTechniques.length} Techniques
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        detected in last emulation
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <div className="text-sm font-medium">Latest Emulation</div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(emulationResults[0].timestamp).toLocaleString()}
-                      </div>
-                    </div>
-                    
-                    <Separator />
-                    
-                    {gapAnalysis && (
-                      <div className="space-y-2">
-                        <div className="text-sm font-medium">Coverage Gaps</div>
-                        <div className="flex items-center text-amber-500">
-                          <AlertTriangle className="h-4 w-4 mr-2" />
-                          <span>
-                            {gapAnalysis.uncoveredTechniques.length} techniques without coverage
-                          </span>
-                        </div>
-                        
-                        <ScrollArea className="h-[200px]">
-                          <div className="space-y-2">
-                            {gapAnalysis.recommendations.slice(0, 5).map((rec, i) => (
-                              <div key={i} className="text-sm p-2 rounded-md bg-muted">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-mono text-xs">{rec.techniqueId}</span>
-                                  <Badge 
-                                    variant={rec.priority === 'high' ? 'destructive' : 'outline'}
-                                    className="text-xs"
-                                  >
-                                    {rec.priority}
-                                  </Badge>
-                                </div>
-                                <p className="mt-1">{rec.recommendation}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <CoverageAnalysis 
+              isLoading={isLoading}
+              emulationResults={emulationResults}
+              coveredTechniques={coveredTechniques}
+              gapAnalysis={gapAnalysis}
+            />
             
             <Card className="col-span-1 md:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle>MITRE ATT&CK Coverage</CardTitle>
-                <CardDescription>
-                  Visualization of covered techniques in the MITRE ATT&CK framework
-                </CardDescription>
+                <CardHeader>Visualization of covered techniques in the MITRE ATT&CK framework</CardHeader>
               </CardHeader>
               <CardContent>
                 <MitreMatrix 
@@ -267,182 +182,20 @@ const DetectionCenter = () => {
             </Card>
           </div>
           
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Detection Rules</CardTitle>
-              <CardDescription>Manage and deploy detection rules</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center mb-4">
-                <Button variant="outline" className="flex items-center">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh
-                  </Button>
-                  <Button size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Deploy Rules
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                {isLoading ? (
-                  <div className="space-y-2 animate-pulse">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      No detection rules generated yet
-                    </p>
-                    <Button variant="outline" className="mt-4">
-                      Generate Rules from Latest Emulation
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <DetectionRules isLoading={isLoading} />
         </TabsContent>
         
         {/* Anomalies Tab */}
         <TabsContent value="anomalies" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Detected Anomalies</CardTitle>
-              <CardDescription>AI-detected anomalies from recent emulations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {detectedAnomalies.length === 0 ? (
-                <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                  <h3 className="text-lg font-medium">No Anomalies Detected</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    No anomalies were detected in the most recent emulation data
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {detectedAnomalies.map((anomaly, index) => (
-                    <div 
-                      key={index}
-                      className="p-4 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/20"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-start space-x-3">
-                          <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
-                          <div>
-                            <h4 className="font-medium mb-1 flex items-center">
-                              <span>Anomaly in </span>
-                              <Badge className="ml-2 font-mono" variant="outline">
-                                {anomaly.techniqueId}
-                              </Badge>
-                            </h4>
-                            <p className="text-sm">{anomaly.description}</p>
-                            <div className="flex items-center mt-2 space-x-2">
-                              <Badge variant={getSeverityVariant(anomaly.severity)}>
-                                {anomaly.severity}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                Confidence: {Math.round(anomaly.confidence * 100)}%
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <AnomalyDisplay anomalies={detectedAnomalies} />
         </TabsContent>
         
         {/* Simulation Tab */}
         <TabsContent value="simulate" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Simulation</CardTitle>
-                <CardDescription>Test detection capabilities with simulated attacks</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Selected Techniques</h3>
-                    <div className="flex flex-wrap gap-2 min-h-10">
-                      {selectedTechniques.length === 0 ? (
-                        <div className="text-sm text-muted-foreground">
-                          No techniques selected
-                        </div>
-                      ) : (
-                        selectedTechniques.map(technique => (
-                          <Badge key={technique} variant="secondary" className="font-mono">
-                            {technique}
-                          </Badge>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Simulation Options</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2 border rounded-md bg-muted">
-                        <div className="flex items-center">
-                          <Bell className="h-4 w-4 mr-2" />
-                          <span className="text-sm">Generate alerts</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">Enabled</div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-2 border rounded-md bg-muted">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          <span className="text-sm">Schedule</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">Run immediately</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2">
-                    <Button 
-                      className="w-full"
-                      disabled={selectedTechniques.length === 0}
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Run Simulation
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Technique Selection</CardTitle>
-                <CardDescription>Select techniques to include in simulation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MitreMatrix 
-                  selectedTechniques={selectedTechniques} 
-                  onTechniqueSelect={handleTechniqueSelect}
-                  isInteractive={true}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <SimulationPanel
+            selectedTechniques={selectedTechniques}
+            onTechniqueSelect={handleTechniqueSelect}
+          />
         </TabsContent>
       </Tabs>
     </div>

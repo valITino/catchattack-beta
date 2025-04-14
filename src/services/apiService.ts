@@ -239,7 +239,7 @@ export const apiService = {
       
     if (error) throw new Error(`Error fetching user tenants: ${error.message}`);
     
-    // Fix: Map over each data item to extract tenant info properly
+    // Map over each data item to extract tenant info properly
     return data?.map(item => ({
       id: item.tenants.id,
       name: item.tenants.name,

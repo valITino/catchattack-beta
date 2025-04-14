@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { EmulationRequest, EmulationResult } from '@/types/backend';
+import { EmulationRequest, EmulationResult, EmulationLog } from '@/types/backend';
 
 export async function handleEmulationRequest(body: { 
   emulationRequest: EmulationRequest;
@@ -12,7 +12,7 @@ export async function handleEmulationRequest(body: {
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   // Generate a mock emulation result
-  const logs = emulationRequest.techniques.map(techniqueId => ({
+  const logs: EmulationLog[] = emulationRequest.techniques.map(techniqueId => ({
     techniqueId,
     timestamp: new Date().toISOString(),
     status: Math.random() > 0.2 ? 'success' : 'failure',

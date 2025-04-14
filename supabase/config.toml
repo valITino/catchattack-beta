@@ -1,1 +1,176 @@
+
+# A string used to distinguish different Supabase projects on the same host. Defaults to the
+# working directory name when running `supabase init`.
 project_id = "tfidqcgdzclihkwquwfn"
+
+[api]
+enabled = true
+# Port to use for the API URL.
+port = 54321
+# Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
+# endpoints. public and storage are always included.
+schemas = ["public", "storage"]
+# Extra schemas to add to the search_path of every request. public is always included.
+extra_search_path = ["public", "extensions"]
+# Maximum rows returns in a single REST request.
+max_rows = 1000
+
+[db]
+# Port to use for the local database URL.
+port = 54322
+# Port used by db diff command to initialise the shadow database.
+shadow_port = 54320
+# The database major version to use. This has to be the same as your remote database's. Run `SHOW
+# server_version;` on the remote database to check.
+major_version = 15
+
+[db.pooler]
+enabled = false
+# Port to use for the local connection pooler.
+port = 54329
+# Maximum number of connections to keep open per host.
+pool_mode = "transaction"
+# How many server connections to allow per user/database pair.
+default_pool_size = 15
+# Maximum number of connections to allow per user/database pair.
+max_client_conn = 100
+
+[realtime]
+enabled = true
+# Bind realtime via either IPv4 or IPv6. (Default: IPv6)
+# ip_version = "IPv6"
+# The port that the realtime server will listen on. (Default: 54323)
+# port = 54323
+# Maximum number of concurrent connections allowed on the server. (Default: 100)
+# maximum_connections = 100
+# Timeout in seconds for realtime clients to be disconnected if they haven't sent a ping. (Default: 60)
+# receive_timeout_seconds = 60
+# Rate limit for websocket messages: number of messages per second. (Default: 10)
+# message_rate_limit = 10
+# Rate limit for realtime subscriptions: number of subscriptions per second. (Default: 1)
+# subscription_rate_limit = 1
+# If true, webhook events will be delivered with best-effort even in the event of failures or timeouts
+# accessing webhook endpoints. If false, webhook events will still be delivered at-least-once, but
+# realtime will wait for webhook endpoint to acknowledge receipt of events. (Default: true)
+# webhook_send_best_effort = true
+# Maximum amount of time to wait for webhook endpoint to respond before webhook delivery will be marked
+# as failed. (Default: 5000)
+# webhook_timeout_ms = 5000
+
+[studio]
+enabled = true
+# Port to use for Supabase Studio.
+port = 54323
+# External URL of the API server that frontend connects to.
+api_url = "http://127.0.0.1:54321"
+# Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
+# are monitored, and you can view the emails that would have been sent from the Studio UI.
+inbucket_port = 54324
+# Port to use for the Supabase Studio API server
+api_server_port = 54325
+
+[functions]
+enabled = true
+# Port to serve Edge Functions on localhost.
+port = 54326
+
+[functions.ai-rule-generation]
+verify_jwt = true
+
+[functions.ai-anomaly-detection]
+verify_jwt = true
+
+[functions.ai-predictive-scheduling]
+verify_jwt = true
+
+[functions.ai-rule-similarity]
+verify_jwt = true
+
+[functions.ai-status]
+verify_jwt = true
+
+[analytics]
+enabled = false
+# The port for event logging.
+port = 54327
+# The port for the vector store.
+vector_port = 54328
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
+# in emails.
+site_url = "http://127.0.0.1:3000"
+# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
+jwt_expiry = 3600
+# If disabled, the refresh token will never expire.
+enable_refresh_token_rotation = true
+# Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
+# Requires enable_refresh_token_rotation = true.
+refresh_token_reuse_interval = 10
+# Allow/disallow new user signups to your project.
+enable_signup = true
+
+[auth.email]
+# Allow/disallow new user signups via email to your project.
+enable_signup = true
+# If enabled, a user will be required to confirm any email change on both the old, and new email
+# addresses. If disabled, only the new email is required to confirm.
+double_confirm_changes = true
+# If enabled, users need to confirm their email address before signing in.
+enable_confirmations = false
+
+# Uncomment to customize email template
+# [auth.email.template.invite]
+# subject = "You have been invited"
+# content_path = "./supabase/templates/invite.html"
+
+[auth.sms]
+# Allow/disallow new user signups via SMS to your project.
+enable_signup = true
+# If enabled, users need to confirm their phone number before signing in.
+enable_confirmations = false
+
+# Use pre-defined map of phone number to OTP for testing.
+[auth.sms.test_otp]
+# 4152127777 = "123456"
+
+# Configure one of the supported SMS providers: `twilio`, `messagebird`, `textlocal`, `vonage`.
+[auth.sms.twilio]
+enabled = false
+account_sid = ""
+message_service_sid = ""
+# DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
+auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+
+# [auth.sms.messagebird]
+# enabled = false
+# access_key = ""
+# originator = ""
+
+# [auth.sms.textlocal]
+# enabled = false
+# api_key = ""
+# sender = ""
+
+# [auth.sms.vonage]
+# enabled = false
+# api_key = ""
+# api_secret = ""
+# from = ""
+
+# Use custom SMTP configuration
+[auth.smtp]
+enable_signup = true
+# host = ""
+# port = 465
+# user = ""
+# password = "env(SUPABASE_AUTH_SMTP_PASSWORD)"
+# sender_name = ""
+# sender_email = ""
+# admin_email = ""  # This is the email of the admin who will receive the request for adding a new user.

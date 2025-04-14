@@ -1,3 +1,4 @@
+
 import { supabase } from '@/utils/supabase';
 import { baseService } from './baseService';
 import type { SigmaRule, EmulationResult, EmulationLog } from '@/types/backend';
@@ -41,7 +42,7 @@ export const aiService = {
   /**
    * Detect anomalies in emulation logs using AI
    * @param logs The logs to analyze
-   * @returns Detected anomalies with confidence scores
+   * @returns Detected anomalies with confidence scores and metadata
    */
   async detectAnomalies(logs: EmulationLog[]): Promise<{
     anomalies: {
@@ -50,8 +51,10 @@ export const aiService = {
       confidence: number;
       severity: 'low' | 'medium' | 'high' | 'critical';
     }[];
-    timestamp?: string;
-    processedLogsCount?: number;
+    timestamp: string;
+    processedLogsCount: number;
+    processingTimeMs?: number;
+    status?: string;
   }> {
     const tenantId = baseService.getTenantId();
     
@@ -60,13 +63,17 @@ export const aiService = {
       return { 
         anomalies: [],
         timestamp: new Date().toISOString(),
-        processedLogsCount: 0
+        processedLogsCount: 0,
+        status: 'no_logs'
       };
     }
     
     console.log(`Detecting anomalies in ${logs.length} logs for tenant ${tenantId}`);
     
     try {
+      // Performance monitoring
+      const requestStartTime = performance.now();
+      
       // Call to Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('ai-anomaly-detection', {
         body: { 
@@ -74,6 +81,10 @@ export const aiService = {
           tenantId
         }
       });
+      
+      // Calculate client-side request time
+      const requestTime = performance.now() - requestStartTime;
+      console.log(`Anomaly detection API call completed in ${requestTime.toFixed(2)}ms`);
       
       if (error) {
         console.error('Anomaly detection error:', error);
@@ -85,12 +96,16 @@ export const aiService = {
         return { 
           anomalies: [],
           timestamp: new Date().toISOString(),
-          processedLogsCount: logs.length
+          processedLogsCount: logs.length,
+          status: 'no_anomalies'
         };
       }
       
-      console.log(`Successfully detected ${data.anomalies.length} anomalies`);
-      return data;
+      console.log(`Successfully detected ${data.anomalies.length} anomalies in ${data.processingTimeMs || 'unknown'}ms`);
+      return {
+        ...data,
+        status: data.status || 'success'
+      };
     } catch (error) {
       console.error('Exception in anomaly detection:', error);
       throw new Error(`Failed to detect anomalies: ${error instanceof Error ? error.message : 'Unknown error'}`);

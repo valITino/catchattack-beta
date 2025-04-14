@@ -22,7 +22,8 @@ serve(async (req) => {
         JSON.stringify({ 
           error: "Missing or invalid logs parameter",
           details: "The logs parameter must be a non-empty array",
-          anomalies: [] // Return empty anomalies array for consistent response structure
+          anomalies: [], // Return empty anomalies array for consistent response structure
+          status: "error"
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -34,7 +35,8 @@ serve(async (req) => {
         JSON.stringify({ 
           error: "Missing or invalid tenant ID",
           details: "A valid tenant ID string is required for this operation",
-          anomalies: [] // Return empty anomalies array for consistent response structure
+          anomalies: [], // Return empty anomalies array for consistent response structure
+          status: "error"
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -43,15 +45,19 @@ serve(async (req) => {
     console.log(`Detecting anomalies for tenant ${tenantId} in ${logs.length} logs`);
     
     // Call the AI helper function to analyze the logs for anomalies
+    const startTime = Date.now();
     const anomalyResults = await detectAnomalies(logs);
+    const processingTime = Date.now() - startTime;
     
-    console.log(`Found ${anomalyResults.length} anomalies`);
+    console.log(`Found ${anomalyResults.length} anomalies in ${processingTime}ms`);
     
     return new Response(
       JSON.stringify({ 
         anomalies: anomalyResults,
         timestamp: new Date().toISOString(),
-        processedLogsCount: logs.length
+        processedLogsCount: logs.length,
+        processingTimeMs: processingTime,
+        status: "success"
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -64,7 +70,9 @@ serve(async (req) => {
         error: "Failed to process anomaly detection request",
         message: error.message,
         stack: process.env.NODE_ENV === 'production' ? undefined : error.stack,
-        anomalies: [] // Return empty anomalies array for consistent response structure
+        anomalies: [], // Return empty anomalies array for consistent response structure
+        status: "error",
+        timestamp: new Date().toISOString()
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

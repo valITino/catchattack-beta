@@ -14,6 +14,10 @@ export async function analyzeEmulationLogs(logs: any[]): Promise<{
   confidence: number;
   suggestedImprovements: string[];
 }> {
+  if (!logs || !Array.isArray(logs) || logs.length === 0) {
+    throw new Error('Cannot analyze empty or invalid logs');
+  }
+
   // Simulate processing delay
   await new Promise(resolve => setTimeout(resolve, 500));
   
@@ -22,7 +26,9 @@ export async function analyzeEmulationLogs(logs: any[]): Promise<{
   
   // Extract unique techniques from logs
   for (const log of logs) {
-    techniques.add(log.techniqueId);
+    if (log && log.techniqueId) {
+      techniques.add(log.techniqueId);
+    }
   }
   
   // Generate a pattern for each unique technique
@@ -76,13 +82,26 @@ export async function detectAnomalies(logs: any[]): Promise<Array<{
   confidence: number;
   severity: 'low' | 'medium' | 'high' | 'critical';
 }>> {
+  if (!logs || !Array.isArray(logs) || logs.length === 0) {
+    return []; // Return empty array instead of throwing when no logs are available
+  }
+
   // Simulate processing delay
   await new Promise(resolve => setTimeout(resolve, 700));
   
   const anomalies = [];
   
   // Simulate finding anomalies in approximately 20% of techniques
-  const uniqueTechniques = Array.from(new Set(logs.map(log => log.techniqueId)));
+  const uniqueTechniques = Array.from(new Set(
+    logs
+      .filter(log => log && log.techniqueId)
+      .map(log => log.techniqueId)
+  ));
+  
+  if (uniqueTechniques.length === 0) {
+    return []; // No valid techniques found in logs
+  }
+  
   const anomalyCount = Math.max(1, Math.floor(uniqueTechniques.length * 0.2));
   
   for (let i = 0; i < anomalyCount; i++) {
@@ -115,6 +134,10 @@ export async function predictOptimalSchedule(techniqueIds: string[]): Promise<{
   reasoning: string;
   resourceImpact: 'low' | 'medium' | 'high';
 }> {
+  if (!techniqueIds || !Array.isArray(techniqueIds) || techniqueIds.length === 0) {
+    throw new Error('Cannot predict schedule without technique IDs');
+  }
+
   // Simulate processing delay
   await new Promise(resolve => setTimeout(resolve, 600));
   
@@ -153,6 +176,14 @@ export async function findSimilarRules(ruleContent: string, tenantId: string): P
   similarity: number;
   title: string;
 }>> {
+  if (!ruleContent || ruleContent.trim() === '') {
+    return []; // Return empty array for empty content
+  }
+  
+  if (!tenantId) {
+    throw new Error('Tenant ID is required for similarity search');
+  }
+
   // Simulate processing delay
   await new Promise(resolve => setTimeout(resolve, 400));
   

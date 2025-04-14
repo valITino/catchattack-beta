@@ -19,6 +19,12 @@ export const aiService = {
   }> {
     const tenantId = baseService.getTenantId();
     
+    if (!emulationResult || !emulationResult.logs || emulationResult.logs.length === 0) {
+      throw new Error('Cannot generate rules from empty or invalid emulation results');
+    }
+    
+    console.log(`Generating enhanced rules for emulation ID: ${emulationResult.id}`);
+    
     // Call to Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('ai-rule-generation', {
       body: { 
@@ -28,6 +34,8 @@ export const aiService = {
     });
     
     if (error) throw new Error(`Error generating enhanced rules: ${error.message}`);
+    if (!data) throw new Error('No data returned from rule generation service');
+    
     return data;
   },
   
@@ -46,6 +54,13 @@ export const aiService = {
   }> {
     const tenantId = baseService.getTenantId();
     
+    if (!logs || !Array.isArray(logs) || logs.length === 0) {
+      console.warn('Attempted to detect anomalies with empty or invalid logs');
+      return { anomalies: [] };
+    }
+    
+    console.log(`Detecting anomalies in ${logs.length} logs`);
+    
     // Call to Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('ai-anomaly-detection', {
       body: { 
@@ -55,6 +70,8 @@ export const aiService = {
     });
     
     if (error) throw new Error(`Error detecting anomalies: ${error.message}`);
+    if (!data) throw new Error('No data returned from anomaly detection service');
+    
     return data;
   },
   
@@ -71,6 +88,12 @@ export const aiService = {
   }> {
     const tenantId = baseService.getTenantId();
     
+    if (!techniqueIds || !Array.isArray(techniqueIds) || techniqueIds.length === 0) {
+      throw new Error('Cannot generate schedule prediction without technique IDs');
+    }
+    
+    console.log(`Getting predictive schedule for ${techniqueIds.length} techniques`);
+    
     // Call to Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('ai-predictive-scheduling', {
       body: { 
@@ -80,6 +103,8 @@ export const aiService = {
     });
     
     if (error) throw new Error(`Error getting predictive schedule: ${error.message}`);
+    if (!data) throw new Error('No data returned from predictive scheduling service');
+    
     return data;
   },
   
@@ -97,6 +122,13 @@ export const aiService = {
   }> {
     const tenantId = baseService.getTenantId();
     
+    if (!ruleContent || ruleContent.trim() === '') {
+      console.warn('Attempted to find similar rules with empty content');
+      return { similarRules: [] };
+    }
+    
+    console.log(`Finding rules similar to content with length ${ruleContent.length}`);
+    
     // Call to Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('ai-rule-similarity', {
       body: { 
@@ -106,6 +138,8 @@ export const aiService = {
     });
     
     if (error) throw new Error(`Error finding similar rules: ${error.message}`);
+    if (!data) throw new Error('No data returned from rule similarity service');
+    
     return data;
   }
 };

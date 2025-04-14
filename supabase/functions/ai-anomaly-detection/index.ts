@@ -16,18 +16,32 @@ serve(async (req) => {
   try {
     const { logs, tenantId } = await req.json();
     
-    if (!logs || !Array.isArray(logs) || !tenantId) {
+    if (!logs || !Array.isArray(logs) || logs.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Missing required parameters" }),
+        JSON.stringify({ 
+          error: "Missing or invalid logs parameter",
+          details: "The logs parameter must be a non-empty array"
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (!tenantId) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Missing tenant ID",
+          details: "A valid tenant ID is required for this operation"
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
     console.log(`Detecting anomalies for tenant ${tenantId} in ${logs.length} logs`);
     
-    // In a real implementation, this would call an AI service
-    // Here we use a helper function that mocks anomaly detection
+    // Call the AI helper function to analyze the logs for anomalies
     const anomalyResults = await detectAnomalies(logs);
+    
+    console.log(`Found ${anomalyResults.length} anomalies`);
     
     return new Response(
       JSON.stringify({ anomalies: anomalyResults }),
@@ -35,8 +49,14 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in anomaly detection:", error);
+    
+    // Provide a more detailed error response
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: "Failed to process anomaly detection request",
+        message: error.message,
+        stack: error.stack
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

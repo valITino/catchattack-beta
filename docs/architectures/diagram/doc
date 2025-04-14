@@ -1,1 +1,282 @@
 
+# CatchAttack-Beta Backend Implementation Guide
+
+This document provides a step-by-step guide for implementing the CatchAttack-Beta backend using Supabase.
+
+## 1. Set Up Supabase Tables
+
+### Tenants Table
+```sql
+CREATE TABLE tenants (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS and create policies
+ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation_policy ON tenants 
+  USING (id IN (
+    SELECT tenant_id FROM users_tenants WHERE user_id = auth.uid()
+  ));
+```
+
+### Users-Tenants Association Table
+```sql
+CREATE TABLE users_tenants (
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'analyst', 'viewer')),
+  PRIMARY KEY (user_id, tenant_id)
+);
+
+-- Enable RLS and create policies
+ALTER TABLE users_tenants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY users_tenants_policy ON users_tenants 
+  USING (user_id = auth.uid() OR tenant_id IN (
+    SELECT tenant_id FROM users_tenants 
+    WHERE user_id = auth.uid() AND role = 'admin'
+  ));
+```
+
+### Emulation Results Table
+```sql
+CREATE TABLE emulation_results (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('success', 'failure', 'pending', 'in-progress')),
+  techniques JSONB NOT NULL,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  logs JSONB NOT NULL,
+  telemetry JSONB
+);
+
+-- Enable RLS and create policies
+ALTER TABLE emulation_results ENABLE ROW LEVEL SECURITY;
+CREATE POLICY emulation_results_policy ON emulation_results
+  USING (tenant_id IN (
+    SELECT tenant_id FROM users_tenants WHERE user_id = auth.uid()
+  ));
+```
+
+### Sigma Rules Table
+```sql
+CREATE TABLE sigma_rules (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL CHECK (status IN ('active', 'draft', 'deprecated')),
+  author TEXT,
+  technique_id TEXT,
+  rule TEXT NOT NULL,
+  date_created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  date_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  deployed_to JSONB DEFAULT '[]'::jsonb,
+  severity TEXT NOT NULL CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+  source TEXT,
+  is_duplicate BOOLEAN DEFAULT FALSE,
+  duplicate_of UUID REFERENCES sigma_rules(id)
+);
+
+-- Enable RLS and create policies
+ALTER TABLE sigma_rules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY sigma_rules_policy ON sigma_rules
+  USING (tenant_id IN (
+    SELECT tenant_id FROM users_tenants WHERE user_id = auth.uid()
+  ));
+```
+
+### SIEM Platforms Table
+```sql
+CREATE TABLE siem_platforms (
+  id TEXT PRIMARY KEY,
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  connected BOOLEAN DEFAULT FALSE,
+  last_sync TIMESTAMP WITH TIME ZONE,
+  rules_deployed INTEGER DEFAULT 0,
+  status TEXT NOT NULL CHECK (status IN ('healthy', 'warning', 'error', 'disconnected')),
+  credentials JSONB
+);
+
+-- Enable RLS and create policies
+ALTER TABLE siem_platforms ENABLE ROW LEVEL SECURITY;
+CREATE POLICY siem_platforms_policy ON siem_platforms
+  USING (tenant_id IN (
+    SELECT tenant_id FROM users_tenants WHERE user_id = auth.uid()
+  ));
+```
+
+### Deployment Results Table
+```sql
+CREATE TABLE deploy_results (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
+  success BOOLEAN NOT NULL,
+  platform_id TEXT REFERENCES siem_platforms(id) ON DELETE CASCADE NOT NULL,
+  deployed_rules JSONB NOT NULL,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS and create policies
+ALTER TABLE deploy_results ENABLE ROW LEVEL SECURITY;
+CREATE POLICY deploy_results_policy ON deploy_results
+  USING (tenant_id IN (
+    SELECT tenant_id FROM users_tenants WHERE user_id = auth.uid()
+  ));
+```
+
+### Schedules Table
+```sql
+CREATE TABLE schedules (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  emulation JSONB NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active', 'paused', 'completed')),
+  last_run TIMESTAMP WITH TIME ZONE,
+  next_run TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
+);
+
+-- Enable RLS and create policies
+ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY schedules_policy ON schedules
+  USING (tenant_id IN (
+    SELECT tenant_id FROM users_tenants WHERE user_id = auth.uid()
+  ));
+```
+
+## 2. Implement Supabase Edge Functions
+
+### Create Emulate Function
+
+1. Set up a new Edge Function using the Supabase CLI:
+```bash
+supabase functions new emulate
+```
+
+2. Implement the function:
+```typescript
+// supabase/functions/emulate/index.ts
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  // Handle OPTIONS request for CORS
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    // Parse request body
+    const { emulationRequest, tenantId } = await req.json();
+    
+    // Validate inputs
+    if (!emulationRequest?.techniques || !Array.isArray(emulationRequest.techniques) || !tenantId) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request data" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+    );
+    
+    // Generate emulation result
+    const logs = emulationRequest.techniques.map(techniqueId => ({
+      techniqueId,
+      timestamp: new Date().toISOString(),
+      status: Math.random() > 0.2 ? "success" : "failure",
+      message: `Emulated technique ${techniqueId}`,
+      details: {
+        command: `mock_command_for_${techniqueId}`,
+        output: `Mock output for ${techniqueId}`
+      }
+    }));
+    
+    const result = {
+      status: logs.some(log => log.status === "failure") ? "failure" : "success",
+      techniques: emulationRequest.techniques,
+      timestamp: new Date().toISOString(),
+      logs,
+      telemetry: {
+        duration: Math.floor(Math.random() * 5000),
+        resourceUsage: {
+          cpu: Math.floor(Math.random() * 100),
+          memory: Math.floor(Math.random() * 1024)
+        }
+      },
+      tenant_id: tenantId
+    };
+    
+    // Insert result into database
+    const { data, error } = await supabaseClient
+      .from("emulation_results")
+      .insert([result])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    // Return success response
+    return new Response(
+      JSON.stringify(data),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    // Return error response
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
+```
+
+### Deploy Edge Functions
+
+Deploy your functions to Supabase:
+```bash
+supabase functions deploy emulate
+supabase functions deploy create-rule
+supabase functions deploy deploy
+supabase functions deploy status
+```
+
+## 3. Set Up Authentication
+
+1. Configure email auth provider in Supabase Auth settings
+2. Customize email templates
+3. Set up role-based access control using the users_tenants table
+
+## 4. Test the Implementation
+
+1. Create a test tenant
+2. Create test users with different roles
+3. Test the emulate function
+4. Test rule generation
+5. Test SIEM deployment
+
+## 5. Production Considerations
+
+1. Set up proper error monitoring
+2. Configure rate limiting
+3. Set up backups for database
+4. Implement CI/CD for Edge Functions

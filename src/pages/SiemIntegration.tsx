@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Cloud } from "lucide-react";
@@ -9,118 +9,85 @@ import PlatformCard from "@/components/siem/PlatformCard";
 import PlatformSettings from "@/components/siem/PlatformSettings";
 import DeployableRuleCard from "@/components/siem/DeployableRuleCard";
 import RuleFilters from "@/components/siem/RuleFilters";
-import { SiemPlatform, DeployableRule, bulkDeployRules } from "@/utils/siemUtils";
-
-// Mock data for SIEM platforms
-const siemPlatforms: SiemPlatform[] = [
-  {
-    id: "splunk",
-    name: "Splunk",
-    description: "Splunk Enterprise Security",
-    connected: true,
-    lastSync: "2025-04-10T14:30:00Z",
-    rulesDeployed: 24,
-    status: "healthy"
-  },
-  {
-    id: "elastic",
-    name: "Elastic Security",
-    description: "Elastic SIEM",
-    connected: true,
-    lastSync: "2025-04-10T12:15:00Z",
-    rulesDeployed: 18,
-    status: "healthy"
-  },
-  {
-    id: "qradar",
-    name: "IBM QRadar",
-    description: "IBM QRadar SIEM",
-    connected: false,
-    lastSync: null,
-    rulesDeployed: 0,
-    status: "disconnected"
-  },
-  {
-    id: "sentinel",
-    name: "Microsoft Sentinel",
-    description: "Azure Sentinel",
-    connected: true,
-    lastSync: "2025-04-09T18:45:00Z",
-    rulesDeployed: 15,
-    status: "warning"
-  },
-  {
-    id: "sumo",
-    name: "Sumo Logic",
-    description: "Sumo Logic Cloud SIEM",
-    connected: false,
-    lastSync: null,
-    rulesDeployed: 0,
-    status: "disconnected"
-  }
-];
-
-// Mock data for deployable rules
-const deployableRules: DeployableRule[] = [
-  {
-    id: "rule-001",
-    title: "PowerShell Execution with Encoded Command",
-    description: "Detects PowerShell execution with encoded command parameter",
-    severity: "high",
-    source: "windows",
-    deployedTo: ["splunk", "elastic"],
-    dateCreated: "2025-04-10T12:34:56Z"
-  },
-  {
-    id: "rule-002",
-    title: "Service Creation with Binary Path Manipulation",
-    description: "Detects service creation with suspicious binary paths",
-    severity: "critical",
-    source: "windows",
-    deployedTo: ["splunk"],
-    dateCreated: "2025-04-10T13:45:23Z"
-  },
-  {
-    id: "rule-003",
-    title: "Suspicious API Access Patterns",
-    description: "Detects unusual API access patterns indicating data exfiltration",
-    severity: "medium",
-    source: "api",
-    deployedTo: ["elastic", "sentinel"],
-    dateCreated: "2025-04-10T09:12:35Z"
-  },
-  {
-    id: "rule-004",
-    title: "Linux Privilege Escalation via SUID Binary",
-    description: "Detects potential privilege escalation via SUID binary execution",
-    severity: "high",
-    source: "linux",
-    deployedTo: [],
-    dateCreated: "2025-04-10T15:22:18Z"
-  },
-  {
-    id: "rule-005",
-    title: "Windows Registry Persistence Mechanism",
-    description: "Detects modifications to registry keys used for persistence",
-    severity: "medium",
-    source: "windows",
-    deployedTo: ["splunk", "sentinel"],
-    dateCreated: "2025-04-09T11:05:42Z"
-  }
-];
+import { SiemPlatform, DeployableRule } from "@/utils/siemUtils";
+import TenantHeader from "@/components/layout/TenantHeader";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiService } from "@/services/apiService";
 
 const SiemIntegration = () => {
+  const queryClient = useQueryClient();
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [selectedRules, setSelectedRules] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSeverities, setSelectedSeverities] = useState<string[]>([]);
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
 
+  // Fetch SIEM platforms
+  const { 
+    data: siemPlatforms = [],
+    isLoading: platformsLoading 
+  } = useQuery({
+    queryKey: ['siemPlatforms'],
+    queryFn: () => apiService.getSiemPlatforms(),
+  });
+
+  // Fetch Sigma rules
+  const {
+    data: sigmaRules = [],
+    isLoading: rulesLoading
+  } = useQuery({
+    queryKey: ['sigmaRules'],
+    queryFn: () => apiService.getSigmaRules(),
+    // Transform to DeployableRule format
+    select: (data) => data.map(rule => ({
+      id: rule.id,
+      title: rule.title,
+      description: rule.description,
+      severity: rule.severity,
+      source: rule.source,
+      deployedTo: rule.deployedTo || [],
+      dateCreated: rule.dateCreated
+    } as DeployableRule))
+  });
+
+  // Deploy rules mutation
+  const deployRulesMutation = useMutation({
+    mutationFn: (deployRequest: { ruleIds: string[], platformId: string }) => 
+      apiService.deploySigmaRules(deployRequest),
+    onSuccess: (data) => {
+      const successCount = data.deployedRules.filter(r => r.status === 'success').length;
+      const failedCount = data.deployedRules.filter(r => r.status === 'failure').length;
+      
+      toast({
+        title: "Deployment Complete",
+        description: `Successfully deployed ${successCount} rules${
+          failedCount > 0 ? `, ${failedCount} failed` : ""
+        }`,
+      });
+      
+      // Clear selection
+      setSelectedRules([]);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['sigmaRules'] });
+      queryClient.invalidateQueries({ queryKey: ['siemPlatforms'] });
+    },
+    onError: (error: Error, variables) => {
+      const platformName = siemPlatforms.find(p => p.id === variables.platformId)?.name || "selected platform";
+      
+      toast({
+        title: "Deployment Failed",
+        description: `Failed to deploy rules to ${platformName}: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+
   // Get current platform details
   const currentPlatform = useMemo(() => {
     if (!selectedPlatform) return null;
     return siemPlatforms.find(platform => platform.id === selectedPlatform) || null;
-  }, [selectedPlatform]);
+  }, [selectedPlatform, siemPlatforms]);
 
   // Toggle rule selection
   const toggleRuleSelection = (ruleId: string) => {
@@ -176,45 +143,45 @@ const SiemIntegration = () => {
       return;
     }
 
-    const platformName = currentPlatform?.name || "selected platform";
-    
-    const result = await bulkDeployRules(selectedRules, selectedPlatform, platformName);
-    
-    if (result.success) {
-      toast({
-        title: "Bulk Deployment Complete",
-        description: `Successfully deployed ${result.deployedCount} rules${
-          result.failedCount > 0 ? `, ${result.failedCount} failed` : ""
-        }`,
-      });
-      setSelectedRules([]);
-    } else {
-      toast({
-        title: "Bulk Deployment Failed",
-        description: `Failed to deploy rules to ${platformName}`,
-        variant: "destructive",
-      });
-    }
+    deployRulesMutation.mutate({
+      ruleIds: selectedRules,
+      platformId: selectedPlatform
+    });
   };
 
   // Filter rules based on search and filters
-  const filteredRules = deployableRules.filter(rule => {
-    const matchesSearch = searchQuery === "" || 
-      rule.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rule.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesSeverity = selectedSeverities.length === 0 || 
-      selectedSeverities.includes(rule.severity);
-    
-    const matchesSource = selectedSources.length === 0 || 
-      selectedSources.includes(rule.source);
-    
-    return matchesSearch && matchesSeverity && matchesSource;
-  });
+  const filteredRules = useMemo(() => {
+    return sigmaRules.filter(rule => {
+      const matchesSearch = searchQuery === "" || 
+        rule.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        rule.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesSeverity = selectedSeverities.length === 0 || 
+        selectedSeverities.includes(rule.severity);
+      
+      const matchesSource = selectedSources.length === 0 || 
+        selectedSources.includes(rule.source);
+      
+      return matchesSearch && matchesSeverity && matchesSource;
+    });
+  }, [sigmaRules, searchQuery, selectedSeverities, selectedSources]);
+
+  // Set first platform as selected if none is selected
+  useEffect(() => {
+    if (siemPlatforms.length > 0 && !selectedPlatform) {
+      const connectedPlatform = siemPlatforms.find(p => p.connected);
+      if (connectedPlatform) {
+        setSelectedPlatform(connectedPlatform.id);
+      }
+    }
+  }, [siemPlatforms, selectedPlatform]);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">SIEM Integration</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">SIEM Integration</h1>
+        <TenantHeader />
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
@@ -224,16 +191,26 @@ const SiemIntegration = () => {
               <CardDescription>Connected security platforms</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {siemPlatforms.map(platform => (
-                  <PlatformCard 
-                    key={platform.id}
-                    platform={platform}
-                    isSelected={selectedPlatform === platform.id}
-                    onSelect={setSelectedPlatform}
-                  />
-                ))}
-              </div>
+              {platformsLoading ? (
+                <div className="flex justify-center p-4">
+                  <div className="animate-pulse space-y-3 w-full">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="h-14 bg-gray-200 dark:bg-gray-700 rounded-md" />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {siemPlatforms.map(platform => (
+                    <PlatformCard 
+                      key={platform.id}
+                      platform={platform}
+                      isSelected={selectedPlatform === platform.id}
+                      onSelect={setSelectedPlatform}
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
           
@@ -256,8 +233,13 @@ const SiemIntegration = () => {
                   <Button 
                     onClick={handleBulkDeploy}
                     className="bg-cyber-primary hover:bg-cyber-primary/90"
+                    disabled={deployRulesMutation.isPending}
                   >
-                    <Cloud className="h-4 w-4 mr-2" /> Deploy Selected ({selectedRules.length})
+                    <Cloud className="h-4 w-4 mr-2" />
+                    {deployRulesMutation.isPending 
+                      ? `Deploying (${selectedRules.length})...` 
+                      : `Deploy Selected (${selectedRules.length})`
+                    }
                   </Button>
                 )}
               </div>
@@ -274,26 +256,34 @@ const SiemIntegration = () => {
                   clearAllFilters={clearAllFilters}
                 />
                 
-                <ScrollArea className="h-[400px] pr-3 -mr-3">
-                  <div className="space-y-3">
-                    {filteredRules.length > 0 ? (
-                      filteredRules.map(rule => (
-                        <DeployableRuleCard
-                          key={rule.id}
-                          rule={rule}
-                          selectedPlatformId={selectedPlatform}
-                          isConnected={!!currentPlatform?.connected}
-                          isSelected={selectedRules.includes(rule.id)}
-                          onToggleSelect={toggleRuleSelection}
-                        />
-                      ))
-                    ) : (
-                      <div className="text-center p-4 text-gray-400">
-                        No rules match the current filters
-                      </div>
-                    )}
+                {rulesLoading ? (
+                  <div className="animate-pulse space-y-3">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-md" />
+                    ))}
                   </div>
-                </ScrollArea>
+                ) : (
+                  <ScrollArea className="h-[400px] pr-3 -mr-3">
+                    <div className="space-y-3">
+                      {filteredRules.length > 0 ? (
+                        filteredRules.map(rule => (
+                          <DeployableRuleCard
+                            key={rule.id}
+                            rule={rule}
+                            selectedPlatformId={selectedPlatform}
+                            isConnected={!!currentPlatform?.connected}
+                            isSelected={selectedRules.includes(rule.id)}
+                            onToggleSelect={toggleRuleSelection}
+                          />
+                        ))
+                      ) : (
+                        <div className="text-center p-4 text-gray-400">
+                          No rules match the current filters
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                )}
               </div>
             </CardContent>
           </Card>

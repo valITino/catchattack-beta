@@ -225,6 +225,15 @@ export const apiService = {
     
     if (!user) throw new Error('User not authenticated');
     
+    interface TenantResult {
+      role: 'admin' | 'analyst' | 'viewer';
+      tenants: {
+        id: string;
+        name: string;
+        description?: string;
+      };
+    }
+    
     const { data, error } = await supabase
       .from('users_tenants')
       .select(`
@@ -240,12 +249,12 @@ export const apiService = {
     if (error) throw new Error(`Error fetching user tenants: ${error.message}`);
     
     // Fix the data mapping to correctly extract tenant info
-    return data?.map(item => ({
+    return (data as TenantResult[] || []).map(item => ({
       id: item.tenants?.id,
       name: item.tenants?.name,
       description: item.tenants?.description,
       role: item.role,
-    })) || [];
+    }));
   },
   
   /**

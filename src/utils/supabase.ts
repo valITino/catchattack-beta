@@ -2,9 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Tables } from '@/types/backend';
 
-// Initialize the Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Initialize the Supabase client with fallbacks for development
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+
+// For development, if URL isn't provided, use a mock client
+const isMockClient = !import.meta.env.VITE_SUPABASE_URL;
+
+if (isMockClient && import.meta.env.DEV) {
+  console.warn('Using mock Supabase client. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables for a real connection.');
+}
 
 export const supabase = createClient<Tables>(supabaseUrl, supabaseAnonKey);
 

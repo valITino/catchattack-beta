@@ -1,10 +1,6 @@
 
-/**
- * This file represents the Edge Function for emulation
- * In a real implementation, this would be deployed to Supabase Edge Functions
- */
-import { EmulationRequest, EmulationResult } from '@/types/backend';
 import { v4 as uuidv4 } from 'uuid';
+import { EmulationRequest, EmulationResult } from '@/types/backend';
 
 export async function handleEmulationRequest(body: { 
   emulationRequest: EmulationRequest;
@@ -25,7 +21,7 @@ export async function handleEmulationRequest(body: {
       command: `mock_command_for_${techniqueId}`,
       output: `Mock output for ${techniqueId}`
     }
-  } as const));
+  }));
   
   const result: EmulationResult = {
     id: uuidv4(),

@@ -1,10 +1,6 @@
 
-/**
- * This file represents the Edge Function for Sigma rule creation
- * In a real implementation, this would be deployed to Supabase Edge Functions
- */
-import { SigmaRule } from '@/types/backend';
 import { v4 as uuidv4 } from 'uuid';
+import { SigmaRule } from '@/types/backend';
 
 export async function handleCreateRuleRequest(body: { 
   rule: Partial<SigmaRule> & { tenant_id: string };

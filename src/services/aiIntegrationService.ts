@@ -1,122 +1,203 @@
 
+import apiClient from './apiClient';
 import { logger } from '@/utils/logger';
-import { apiClient } from '@/services/apiClient';
+import { catchAsync } from '@/utils/errorHandler';
 import { AI_CONFIG } from '@/config/config';
+import type { EmulationResult } from '@/types/backend';
 
 /**
- * Interface for emulation logs
+ * Service for AI-powered rule generation and analysis
  */
-interface EmulationLogs {
-  id: string;
-  timestamp: string;
-  techniques: string[];
-  events: Array<{
-    timestamp: string;
-    technique: string;
-    details: string;
-    success: boolean;
-  }>;
-}
-
-/**
- * Interface for a generated Sigma rule
- */
-interface GeneratedRule {
+export interface AIRuleSuggestion {
   title: string;
   description: string;
+  techniqueId: string;
   rule: string;
-  severity: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
   confidence: number;
-  mitreId: string[];
+}
+
+export interface AIAnalysisResult {
+  rules: AIRuleSuggestion[];
+  confidence: number;
+  suggestedImprovements: string[];
+  processedData: {
+    eventsAnalyzed: number;
+    techniquesDetected: number;
+    coverageGaps: string[];
+  };
+}
+
+export interface AnomalyDetectionResult {
+  anomalies: Array<{
+    id: string;
+    description: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    relatedTechnique?: string;
+    confidence: number;
+    eventIds: string[];
+  }>;
+  processedLogsCount: number;
+  detectionThreshold: number;
 }
 
 /**
- * AI Integration Service for rule generation and analysis
+ * Service for AI-powered enhancements
  */
-export const aiIntegrationService = {
+class AIIntegrationService {
   /**
-   * Analyze emulation logs and generate Sigma rules
-   * @param emulationLogs Logs from an emulation run
-   * @returns Generated rules and confidence scores
+   * Generate enhanced rules using AI analysis of emulation results
+   * @param emulationResult Emulation result data
+   * @returns Analysis results with rule suggestions
    */
-  analyzeLogsAndGenerateRules: async (emulationLogs: EmulationLogs): Promise<GeneratedRule[]> => {
-    try {
-      // In a real implementation, this would call an AI service or API
-      logger.info('Analyzing emulation logs for rule generation', { emulationId: emulationLogs.id });
+  generateEnhancedRules = catchAsync(
+    async (emulationResult: EmulationResult): Promise<AIAnalysisResult> => {
+      logger.info('Generating AI-enhanced rules', { 
+        emulationId: emulationResult.id,
+        logCount: emulationResult.logs?.length || 0
+      });
       
-      // Simulate API call to an AI service
-      const response = await apiClient.post('/ai/generate-rules', { logs: emulationLogs });
-      return response.data.rules;
-    } catch (error) {
-      logger.error('Error in AI rule generation:', error);
-      
-      // Fallback: Return a simple rule based on techniques
-      // This is just for demo purposes - in production, proper error handling would be implemented
-      return emulationLogs.techniques.map(technique => ({
-        title: `Detected ${technique} Activity`,
-        description: `This rule detects ${technique} execution based on emulated activity.`,
-        rule: `title: Detected ${technique} Activity\ndescription: This rule detects ${technique} execution\nstatus: experimental\nauthor: AI Generator\nlogsource:\n  product: windows\n  service: sysmon\ndetection:\n  selection:\n    EventID: 1\n    CommandLine|contains: 'example command'\n  condition: selection`,
-        severity: 'medium',
-        confidence: 0.7,
-        mitreId: [technique]
-      }));
+      try {
+        // Call AI rule generation function
+        const response = await apiClient.post('/ai-rule-generation', {
+          emulationResult,
+          tenantId: localStorage.getItem('tenant_id') || 'default'
+        });
+        
+        logger.debug('AI rule generation complete', { 
+          rulesGenerated: response.rules?.length || 0 
+        });
+        
+        return response;
+      } catch (error) {
+        logger.error('Error generating AI-enhanced rules', error);
+        
+        // Fallback response if the AI service fails
+        return {
+          rules: [],
+          confidence: 0,
+          suggestedImprovements: ['AI service unavailable'],
+          processedData: {
+            eventsAnalyzed: 0,
+            techniquesDetected: 0,
+            coverageGaps: ['AI analysis failed']
+          }
+        };
+      }
     }
-  },
-  
+  );
+
   /**
-   * Check if a rule is similar to existing rules
-   * @param ruleContent The rule content to check
+   * Detect anomalies in logs using AI
+   * @param logs Event logs to analyze
+   * @returns Detection results with anomalies
+   */
+  detectAnomalies = catchAsync(
+    async (logs: any[]): Promise<AnomalyDetectionResult> => {
+      logger.info('Detecting anomalies using AI', { logCount: logs.length });
+      
+      try {
+        // Call AI anomaly detection function
+        const response = await apiClient.post('/ai-anomaly-detection', {
+          logs,
+          threshold: AI_CONFIG.anomalyDetection.threshold,
+          useHistoricalData: AI_CONFIG.anomalyDetection.useHistoricalData
+        });
+        
+        logger.debug('AI anomaly detection complete', { 
+          anomaliesDetected: response.anomalies?.length || 0 
+        });
+        
+        return response;
+      } catch (error) {
+        logger.error('Error detecting anomalies', error);
+        
+        // Return empty result if the service fails
+        return {
+          anomalies: [],
+          processedLogsCount: logs.length,
+          detectionThreshold: AI_CONFIG.anomalyDetection.threshold
+        };
+      }
+    }
+  );
+
+  /**
+   * Find similar existing rules to prevent duplication
+   * @param ruleContent Sigma rule content to compare
    * @returns Similarity analysis results
    */
-  checkRuleSimilarity: async (ruleContent: string): Promise<{
-    isSimilar: boolean;
-    similarRules: Array<{ id: string; title: string; similarity: number }>;
-  }> => {
-    try {
-      // In a real implementation, this would use an embedding or similarity algorithm
-      logger.info('Checking rule similarity');
+  findSimilarRules = catchAsync(
+    async (ruleContent: string): Promise<{
+      similarRules: Array<{
+        ruleId: string;
+        title: string;
+        similarity: number;
+        diffAreas: string[];
+      }>;
+    }> => {
+      logger.info('Finding similar rules');
       
-      // Simulate API call to an AI service
-      const response = await apiClient.post('/ai/check-similarity', { rule: ruleContent });
-      return response.data;
-    } catch (error) {
-      logger.error('Error in rule similarity check:', error);
-      
-      // Return empty results on error
-      return {
-        isSimilar: false,
-        similarRules: []
-      };
+      try {
+        // Call AI rule similarity function
+        const response = await apiClient.post('/ai-rule-similarity', {
+          ruleContent,
+          threshold: 0.7 // Similarity threshold
+        });
+        
+        logger.debug('Similar rule check complete', { 
+          similarRulesFound: response.similarRules?.length || 0 
+        });
+        
+        return response;
+      } catch (error) {
+        logger.error('Error finding similar rules', error);
+        
+        // Return empty result if the service fails
+        return { similarRules: [] };
+      }
     }
-  },
-  
-  /**
-   * Optimize a Sigma rule based on AI analysis
-   * @param ruleContent The rule content to optimize
-   * @returns Optimized rule and recommendations
-   */
-  optimizeRule: async (ruleContent: string): Promise<{
-    optimized: string;
-    recommendations: string[];
-    confidenceScore: number;
-  }> => {
-    try {
-      logger.info('Optimizing Sigma rule with AI');
-      
-      // Simulate API call to an AI service
-      const response = await apiClient.post('/ai/optimize-rule', { rule: ruleContent });
-      return response.data;
-    } catch (error) {
-      logger.error('Error in rule optimization:', error);
-      
-      // Return original rule on error
-      return {
-        optimized: ruleContent,
-        recommendations: ['AI optimization service unavailable'],
-        confidenceScore: 0
-      };
-    }
-  }
-};
+  );
 
+  /**
+   * Generate predictive emulation schedule based on historical data
+   * @returns Suggested emulation schedule
+   */
+  generatePredictiveSchedule = catchAsync(
+    async (): Promise<{
+      suggestedSchedules: Array<{
+        dayOfWeek: number;
+        timeOfDay: string;
+        confidence: number;
+        techniques: string[];
+        reasoning: string;
+      }>;
+    }> => {
+      logger.info('Generating predictive emulation schedule');
+      
+      try {
+        // Call AI predictive scheduling function
+        const response = await apiClient.post('/ai-predictive-scheduling', {
+          tenantId: localStorage.getItem('tenant_id') || 'default'
+        });
+        
+        logger.debug('Predictive scheduling complete', { 
+          schedulesGenerated: response.suggestedSchedules?.length || 0 
+        });
+        
+        return response;
+      } catch (error) {
+        logger.error('Error generating predictive schedule', error);
+        
+        // Return empty schedules if the service fails
+        return { suggestedSchedules: [] };
+      }
+    }
+  );
+}
+
+// Export singleton instance
+export const aiIntegrationService = new AIIntegrationService();
+
+// Default export for convenience
 export default aiIntegrationService;

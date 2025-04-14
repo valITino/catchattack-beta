@@ -1,5 +1,5 @@
 
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouteObject } from "react-router-dom";
 
 import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -15,61 +15,71 @@ import AutomationPipeline from "./pages/AutomationPipeline";
 import CommunityMarketplace from "./pages/CommunityMarketplace";
 import DetectionCenter from "./pages/DetectionCenter";
 
-export const router = createBrowserRouter([
+// Define routes using a more structured approach
+const routes: RouteObject[] = [
   {
+    path: "/",
     element: <AppLayout />,
     children: [
       {
-        path: "/",
+        index: true,
         element: <Dashboard />,
       },
       {
-        path: "/detection",
+        path: "detection",
         element: <DetectionCenter />,
       },
       {
-        path: "/rules",
+        path: "rules",
         element: <Rules />,
       },
       {
-        path: "/incidents",
+        path: "incidents",
         element: <Incidents />,
       },
       {
-        path: "/siem",
+        path: "siem",
         element: <SiemIntegration />,
       },
       {
-        path: "/emulation",
+        path: "emulation",
         element: <EmulationSettings />,
       },
       {
-        path: "/sigma",
+        path: "sigma",
         element: <SigmaGenerator />,
       },
       {
-        path: "/infrastructure",
+        path: "infrastructure",
         element: <InfrastructureAssessment />,
       },
       {
-        path: "/automation",
+        path: "automation",
         element: <AutomationPipeline />,
       },
       {
-        path: "/marketplace",
+        path: "marketplace",
         element: <CommunityMarketplace />,
       },
       {
-        path: "/settings",
+        path: "settings",
         element: <Settings />,
       },
+      // Redirect legacy routes if needed
+      {
+        path: "dashboard",
+        element: <Navigate to="/" replace />,
+      }
     ],
   },
   {
     path: "*",
     element: <NotFound />,
   },
-]);
+];
+
+// Create and export the router
+export const router = createBrowserRouter(routes);
 
 // Default export of the router
 export default router;

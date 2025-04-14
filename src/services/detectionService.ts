@@ -134,14 +134,14 @@ export const detectionService = {
         .filter(tech => !loggedTechniqueIds.has(tech.id))
         .map(tech => tech.id);
       
-      // Generate simple recommendations for uncovered techniques
+      // Generate recommendations for uncovered techniques with proper typing
       const recommendations = techniques
         .filter(tech => !loggedTechniqueIds.has(tech.id))
         .map(tech => ({
           techniqueId: tech.id,
           recommendation: `Consider adding detection coverage for ${tech.name} (${tech.id})`,
-          priority: tech.tactic === 'Initial Access' || tech.tactic === 'Command and Control' 
-            ? 'high' : 'medium'
+          priority: (tech.tactic === 'Initial Access' || tech.tactic === 'Command and Control') 
+            ? 'high' as const : 'medium' as const
         }));
       
       return {

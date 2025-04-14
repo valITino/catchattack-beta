@@ -16,9 +16,12 @@ import {
   PlaySquare
 } from 'lucide-react';
 
-export type SidebarProps = React.HTMLAttributes<HTMLDivElement>;
+export type SidebarProps = React.HTMLAttributes<HTMLDivElement> & {
+  collapsed?: boolean;
+  setCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
+};
 
-export const Sidebar = ({ className }: SidebarProps) => {
+export const Sidebar = ({ className, collapsed, setCollapsed }: SidebarProps) => {
   const navItems = [
     {
       name: 'Dashboard',
@@ -78,7 +81,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
   ];
 
   return (
-    <div className={cn('pb-12 h-full', className)}>
+    <div className={cn('pb-12 h-full', className, collapsed ? 'w-16' : 'w-64')}>
       <div className="space-y-4 py-4">
         <div className="py-2">
           <div className="space-y-1">
@@ -97,7 +100,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
                 }
               >
                 {item.icon}
-                <span className="ml-3 flex-1">{item.name}</span>
+                {!collapsed && <span className="ml-3 flex-1">{item.name}</span>}
               </NavLink>
             ))}
           </div>

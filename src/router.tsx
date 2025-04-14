@@ -1,66 +1,72 @@
 
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
+
 import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
+import Rules from "./pages/Rules";
+import Incidents from "./pages/Incidents";
 import NotFound from "./pages/NotFound";
+import SiemIntegration from "./pages/SiemIntegration";
 import EmulationSettings from "./pages/EmulationSettings";
 import SigmaGenerator from "./pages/SigmaGenerator";
-import SiemIntegration from "./pages/SiemIntegration";
 import InfrastructureAssessment from "./pages/InfrastructureAssessment";
 import AutomationPipeline from "./pages/AutomationPipeline";
 import CommunityMarketplace from "./pages/CommunityMarketplace";
-import Settings from "./pages/Settings";
-import Incidents from "./pages/Incidents";
-import Rules from "./pages/Rules";
+import DetectionCenter from "./pages/DetectionCenter";
 
-const router = createBrowserRouter([
+export const router = createBrowserRouter([
   {
-    path: "/",
     element: <AppLayout />,
-    errorElement: <NotFound />,
     children: [
       {
-        index: true,
+        path: "/",
         element: <Dashboard />,
       },
       {
-        path: "emulation",
-        element: <EmulationSettings />,
+        path: "/detection",
+        element: <DetectionCenter />,
       },
       {
-        path: "sigma",
-        element: <SigmaGenerator />,
-      },
-      {
-        path: "siem",
-        element: <SiemIntegration />,
-      },
-      {
-        path: "infrastructure",
-        element: <InfrastructureAssessment />,
-      },
-      {
-        path: "automation",
-        element: <AutomationPipeline />,
-      },
-      {
-        path: "community",
-        element: <CommunityMarketplace />,
-      },
-      {
-        path: "rules",
+        path: "/rules",
         element: <Rules />,
       },
       {
-        path: "incidents",
+        path: "/incidents",
         element: <Incidents />,
       },
       {
-        path: "settings",
+        path: "/siem",
+        element: <SiemIntegration />,
+      },
+      {
+        path: "/emulation",
+        element: <EmulationSettings />,
+      },
+      {
+        path: "/sigma",
+        element: <SigmaGenerator />,
+      },
+      {
+        path: "/infrastructure",
+        element: <InfrastructureAssessment />,
+      },
+      {
+        path: "/automation",
+        element: <AutomationPipeline />,
+      },
+      {
+        path: "/marketplace",
+        element: <CommunityMarketplace />,
+      },
+      {
+        path: "/settings",
         element: <Settings />,
       },
     ],
   },
+  {
+    path: "*",
+    element: <NotFound />,
+  },
 ]);
-
-export default router;

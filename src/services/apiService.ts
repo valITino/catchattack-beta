@@ -1,4 +1,3 @@
-
 import { supabase, getCurrentTenantId } from '@/utils/supabase';
 import type { 
   EmulationRequest, 
@@ -225,15 +224,6 @@ export const apiService = {
     
     if (!user) throw new Error('User not authenticated');
     
-    interface TenantResult {
-      role: 'admin' | 'analyst' | 'viewer';
-      tenants: {
-        id: string;
-        name: string;
-        description?: string;
-      };
-    }
-    
     const { data, error } = await supabase
       .from('users_tenants')
       .select(`
@@ -248,13 +238,16 @@ export const apiService = {
       
     if (error) throw new Error(`Error fetching user tenants: ${error.message}`);
     
-    // Fix the data mapping to correctly handle the structure
-    return (data || []).map(item => ({
-      id: item.tenants?.id,
-      name: item.tenants?.name,
-      description: item.tenants?.description,
-      role: item.role,
-    }));
+    // Fixed data mapping - tenants is a nested object, not an array
+    return (data || []).map(item => {
+      // Each item has role and a single tenants object
+      return {
+        id: item.tenants?.id,
+        name: item.tenants?.name,
+        description: item.tenants?.description,
+        role: item.role,
+      };
+    });
   },
   
   /**

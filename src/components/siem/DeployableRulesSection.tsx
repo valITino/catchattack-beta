@@ -1,15 +1,13 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, Cloud } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/components/ui/use-toast";
-import { DeployableRule } from "@/utils/siemUtils";
-import RuleFilters from "./RuleFilters";
-import DeployableRuleCard from "./DeployableRuleCard";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiService } from "@/services/apiService";
+import { DeployableRule } from "@/utils/siemUtils";
+import RuleFilters from "./RuleFilters";
+import RuleActions from "./RuleActions";
+import RulesContent from "./RulesContent";
 
 interface DeployableRulesSectionProps {
   rules: DeployableRule[];
@@ -52,7 +50,7 @@ const DeployableRulesSection = ({
       queryClient.invalidateQueries({ queryKey: ['sigmaRules'] });
       queryClient.invalidateQueries({ queryKey: ['siemPlatforms'] });
     },
-    onError: (error: Error, variables) => {
+    onError: (error: Error) => {
       toast({
         title: "Deployment Failed",
         description: `Failed to deploy rules: ${error.message}`,
@@ -87,7 +85,7 @@ const DeployableRulesSection = ({
   };
 
   // Handle bulk rule deployment
-  const handleBulkDeploy = async () => {
+  const handleBulkDeploy = () => {
     if (selectedRules.length === 0) {
       toast({
         title: "No Rules Selected",
@@ -137,20 +135,12 @@ const DeployableRulesSection = ({
             <CardTitle>Deployable Rules</CardTitle>
             <CardDescription>Sigma rules ready for deployment</CardDescription>
           </div>
-          {selectedRules.length > 0 && 
-           selectedPlatform && 
-           isPlatformConnected && (
-            <Button 
-              onClick={handleBulkDeploy}
-              className="bg-cyber-primary hover:bg-cyber-primary/90"
-              disabled={deployRulesMutation.isPending}
-            >
-              <Cloud className="h-4 w-4 mr-2" />
-              {deployRulesMutation.isPending 
-                ? `Deploying (${selectedRules.length})...` 
-                : `Deploy Selected (${selectedRules.length})`
-              }
-            </Button>
+          {selectedRules.length > 0 && selectedPlatform && isPlatformConnected && (
+            <RuleActions
+              selectedCount={selectedRules.length}
+              isPending={deployRulesMutation.isPending}
+              onBulkDeploy={handleBulkDeploy}
+            />
           )}
         </div>
       </CardHeader>
@@ -166,34 +156,14 @@ const DeployableRulesSection = ({
             clearAllFilters={clearAllFilters}
           />
           
-          {isLoading ? (
-            <div className="animate-pulse space-y-3">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-md" />
-              ))}
-            </div>
-          ) : (
-            <ScrollArea className="h-[400px] pr-3 -mr-3">
-              <div className="space-y-3">
-                {filteredRules.length > 0 ? (
-                  filteredRules.map(rule => (
-                    <DeployableRuleCard
-                      key={rule.id}
-                      rule={rule}
-                      selectedPlatformId={selectedPlatform}
-                      isConnected={isPlatformConnected}
-                      isSelected={selectedRules.includes(rule.id)}
-                      onToggleSelect={onToggleRuleSelection}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center p-4 text-gray-400">
-                    No rules match the current filters
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          )}
+          <RulesContent
+            rules={filteredRules}
+            isLoading={isLoading}
+            selectedRules={selectedRules}
+            selectedPlatform={selectedPlatform}
+            isPlatformConnected={isPlatformConnected}
+            onToggleRuleSelection={onToggleRuleSelection}
+          />
         </div>
       </CardContent>
     </Card>

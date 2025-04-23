@@ -23,6 +23,7 @@ const AutoRuleGenerator = () => {
     setGenerateCorrelation,
     isRunning,
     generationResults,
+    setGenerationResults,
     handleSelectOption,
     handleStartGeneration,
     handleSaveRules,

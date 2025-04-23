@@ -10,6 +10,7 @@ let lastFetchTime = 0;
 /**
  * AI-powered MITRE ATT&CK framework data provider
  * Provides techniques and tactics from the MITRE ATT&CK framework with caching
+ * Integrated with TAXII server for real-time data
  */
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -25,7 +26,18 @@ serve(async (req) => {
     
     if (!isCacheValid) {
       console.log("Cache invalid, fetching fresh MITRE ATT&CK data");
-      cachedTechniques = await fetchMitreAttackTechniques();
+      
+      try {
+        // Try to fetch from TAXII server first
+        cachedTechniques = await fetchFromTaxiiServer();
+        console.log(`Successfully fetched ${cachedTechniques.length} techniques from TAXII server`);
+      } catch (taxiiError) {
+        console.error("Error fetching from TAXII server:", taxiiError);
+        console.log("Falling back to GitHub hosted CTI data");
+        // Fall back to GitHub-hosted CTI data
+        cachedTechniques = await fetchMitreAttackTechniques();
+      }
+      
       lastFetchTime = now;
     } else {
       console.log("Using cached MITRE ATT&CK data");
@@ -75,6 +87,111 @@ serve(async (req) => {
     );
   }
 });
+
+/**
+ * Fetches data from MITRE ATT&CK TAXII server
+ */
+async function fetchFromTaxiiServer(): Promise<MitreAttackTechnique[]> {
+  // TAXII 2.1 API endpoints
+  const discoveryUrl = "https://cti-taxii.mitre.org/taxii/";
+  const apiRootUrl = "https://cti-taxii.mitre.org/stix/";
+  const enterpriseCollectionUrl = "https://cti-taxii.mitre.org/stix/collections/95ecc380-afe9-11e4-9b6c-751b66dd541e/";
+  
+  // Headers for TAXII requests
+  const taxiiHeaders = {
+    "Accept": "application/taxii+json;version=2.1",
+    "Content-Type": "application/taxii+json;version=2.1",
+  };
+  
+  // First, discover available API roots
+  const discoveryResponse = await fetch(discoveryUrl, { headers: taxiiHeaders });
+  if (!discoveryResponse.ok) {
+    throw new Error(`TAXII discovery failed: ${discoveryResponse.status} ${discoveryResponse.statusText}`);
+  }
+  
+  // Now fetch objects from the Enterprise ATT&CK collection
+  const objectsUrl = `${enterpriseCollectionUrl}objects/`;
+  const objectsResponse = await fetch(objectsUrl, { 
+    headers: { 
+      ...taxiiHeaders,
+      "Accept": "application/vnd.oasis.stix+json; version=2.1"
+    } 
+  });
+  
+  if (!objectsResponse.ok) {
+    throw new Error(`TAXII objects fetch failed: ${objectsResponse.status} ${objectsResponse.statusText}`);
+  }
+  
+  const objectsData = await objectsResponse.json();
+  
+  // Process STIX data to extract techniques
+  const techniques: MitreAttackTechnique[] = [];
+  
+  // Find all attack-pattern objects, which represent techniques
+  const attackPatterns = objectsData.objects.filter(obj => obj.type === 'attack-pattern');
+  
+  for (const pattern of attackPatterns) {
+    // Skip revoked or deprecated techniques
+    if (pattern.revoked || pattern.x_mitre_deprecated) continue;
+    
+    // Find tactic using the kill_chain_phases
+    let tactic = '';
+    if (pattern.kill_chain_phases && pattern.kill_chain_phases.length > 0) {
+      // Get the ATT&CK tactic from kill chain phase
+      const attackTactic = pattern.kill_chain_phases.find(p => p.kill_chain_name === 'mitre-attack');
+      if (attackTactic) {
+        tactic = attackTactic.phase_name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      }
+    }
+    
+    // Extract ID from external_references
+    let id = '';
+    let references: string[] = [];
+    
+    if (pattern.external_references) {
+      const mitreSrc = pattern.external_references.find(ref => ref.source_name === 'mitre-attack');
+      if (mitreSrc) {
+        id = mitreSrc.external_id;
+        
+        // Add URL to references if available
+        if (mitreSrc.url) {
+          references.push(mitreSrc.url);
+        }
+      }
+      
+      // Add other references except MITRE source itself
+      references = [
+        ...references,
+        ...pattern.external_references
+          .filter(ref => ref.source_name !== 'mitre-attack' && ref.url)
+          .map(ref => ref.url)
+      ];
+    }
+    
+    // Skip if no ID was found
+    if (!id) continue;
+    
+    // Extract data sources
+    const dataSources = pattern.x_mitre_data_sources || [];
+    
+    // Extract platforms
+    const platforms = pattern.x_mitre_platforms || [];
+    
+    techniques.push({
+      id,
+      name: pattern.name,
+      tactic,
+      description: pattern.description,
+      detection: pattern.x_mitre_detection || '',
+      platforms: platforms,
+      dataSources: dataSources,
+      mitigation: pattern.x_mitre_mitigation || '',
+      references: references
+    });
+  }
+  
+  return techniques;
+}
 
 /**
  * Fetches MITRE ATT&CK techniques from the official STIX/TAXII server or API
@@ -185,6 +302,7 @@ async function fetchMitreAttackTechniques(): Promise<MitreAttackTechnique[]> {
  * Provides fallback static MITRE technique data in case the API fetch fails
  */
 function getFallbackTechniques(): MitreAttackTechnique[] {
+  // Use a subset of real data for the fallback
   return [
     {
       id: "T1078",

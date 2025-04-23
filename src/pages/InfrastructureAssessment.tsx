@@ -8,6 +8,7 @@ import { ScanSearch, Upload, Server } from "lucide-react";
 
 import InfrastructureForm from "@/components/emulation/InfrastructureForm";
 import VirtualizedEnvironment, { VirtualEnvironment } from "@/components/emulation/VirtualizedEnvironment";
+import CalderaIntegration from "@/components/emulation/CalderaIntegration";
 
 // Mock data for a sample environment
 const sampleEnvironment: VirtualEnvironment = {
@@ -149,6 +150,72 @@ const InfrastructureAssessment = () => {
     });
   };
 
+  const handleVMGenerated = (vmConfig: any) => {
+    toast({
+      title: "VM Generated",
+      description: "Virtual machine configuration created from agent data"
+    });
+    
+    // If we already have an environment, add the new VM to it
+    if (environment) {
+      setEnvironment({
+        ...environment,
+        vms: [
+          ...environment.vms,
+          {
+            id: vmConfig.id || `vm-${Date.now()}`,
+            name: vmConfig.name,
+            type: "server",
+            os: vmConfig.vmProperties?.os || "Unknown OS",
+            services: vmConfig.services?.map((s: any) => s.name) || [],
+            vulnerabilities: vmConfig.vulnerabilities?.length || 0,
+            status: "running",
+          }
+        ]
+      });
+    } else {
+      // Create a new environment with the VM
+      setEnvironment({
+        id: `env-${Date.now()}`,
+        name: vmConfig.name || "Generated Environment",
+        description: vmConfig.description || "Environment generated from agent data",
+        created: new Date(),
+        status: "ready",
+        complexity: "medium",
+        vms: [
+          {
+            id: vmConfig.id || `vm-${Date.now()}`,
+            name: vmConfig.name,
+            type: "server",
+            os: vmConfig.vmProperties?.os || "Unknown OS",
+            services: vmConfig.services?.map((s: any) => s.name) || [],
+            vulnerabilities: vmConfig.vulnerabilities?.length || 0,
+            status: "running",
+          }
+        ],
+        networks: [
+          {
+            id: `net-${Date.now()}`,
+            name: "Default Network",
+            devices: [vmConfig.name],
+            trafficVolume: 100,
+            securityControls: ["Firewall"],
+          }
+        ],
+        dataSources: vmConfig.dataCollection?.logSources.map((source: any) => ({
+          id: source.id || `ds-${Date.now()}`,
+          name: source.name,
+          type: "System Logs",
+          format: source.format || "Unknown",
+          sampleAvailable: false,
+        })) || []
+      });
+    }
+    
+    // Switch to the environment tab
+    setActiveTab("environment");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -156,9 +223,10 @@ const InfrastructureAssessment = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="assessment">Assessment</TabsTrigger>
           <TabsTrigger value="environment">Virtual Environment</TabsTrigger>
+          <TabsTrigger value="caldera">CALDERA</TabsTrigger>
         </TabsList>
 
         <TabsContent value="assessment" className="space-y-4">
@@ -209,6 +277,18 @@ const InfrastructureAssessment = () => {
             environment={environment} 
             isGenerating={isGenerating} 
             progress={progress} 
+          />
+        </TabsContent>
+
+        <TabsContent value="caldera" className="space-y-4">
+          <CalderaIntegration 
+            onVMGenerated={handleVMGenerated}
+            onOperationComplete={(operationData) => {
+              toast({
+                title: "Operation Completed",
+                description: `${operationData.results?.length || 0} results collected from the operation`
+              });
+            }}
           />
         </TabsContent>
       </Tabs>

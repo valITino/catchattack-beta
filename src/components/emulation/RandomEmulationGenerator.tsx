@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { Dices, Settings2, Clock } from "lucide-react";
 import TacticsList from "./random-generator/TacticsList";
@@ -9,6 +10,7 @@ import FrequencySelector from "./random-generator/FrequencySelector";
 import ComplexitySelector from "./random-generator/ComplexitySelector";
 import TechniqueCountSlider from "./random-generator/TechniqueCountSlider";
 import ImmediateExecution from "./random-generator/ImmediateExecution";
+import GeneratorHeader from "./random-generator/GeneratorHeader";
 
 interface RandomEmulationGeneratorProps {
   onGenerate: (config: EmulationConfig) => void;
@@ -84,22 +86,7 @@ const RandomEmulationGenerator = ({ onGenerate, automated = false }: RandomEmula
 
   return (
     <Card className="cyber-card">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {automated ? (
-            <Settings2 className="h-5 w-5 text-cyber-primary" />
-          ) : (
-            <Dices className="h-5 w-5 text-cyber-primary" />
-          )}
-          {automated ? "Automated Emulation Pipeline" : "Random Emulation Generator"}
-        </CardTitle>
-        <CardDescription>
-          {automated 
-            ? "Configure automated emulation pipelines with CI/CD integration"
-            : "Generate random attack patterns based on MITRE ATT&CK"
-          }
-        </CardDescription>
-      </CardHeader>
+      <GeneratorHeader automated={automated} />
       <CardContent className="space-y-4">
         <ComplexitySelector 
           complexity={complexity} 

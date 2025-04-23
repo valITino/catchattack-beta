@@ -1,9 +1,16 @@
 
 import { supabase } from "@/utils/supabase";
 import { toast } from "@/components/ui/use-toast";
+import { MitreAttackTechnique } from "@/utils/mitreAttackUtils";
 
 export const mitreService = {
-  async getMitreTechniques() {
+  async getMitreTechniques(): Promise<{
+    techniques: MitreAttackTechnique[];
+    timestamp: string;
+    source: string;
+    version: string;
+    cached: boolean;
+  }> {
     console.log(`Fetching MITRE ATT&CK techniques`);
     
     try {

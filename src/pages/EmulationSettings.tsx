@@ -3,12 +3,12 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, Shuffle } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { ManualConfiguration } from "@/components/emulation/settings/ManualConfiguration";
 import { EmulationHeader } from "@/components/emulation/settings/EmulationHeader";
 import EmulationScheduler, { EmulationSchedule } from "@/components/emulation/EmulationScheduler";
 import RandomEmulationGenerator, { EmulationConfig } from "@/components/emulation/RandomEmulationGenerator";
 import { ScheduledEmulationsList } from "@/components/emulation/settings/ScheduledEmulationsList";
 import { RandomEmulationResults } from "@/components/emulation/settings/RandomEmulationResults";
+import { ManualTabContent } from "@/components/emulation/settings/ManualTabContent";
 import { adversaryTemplates } from "@/data/emulationData";
 
 const EmulationSettings = () => {
@@ -110,8 +110,8 @@ const EmulationSettings = () => {
           <TabsTrigger value="random"><Shuffle className="h-4 w-4 mr-2" />Random</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="manual" className="space-y-4">
-          <ManualConfiguration 
+        <TabsContent value="manual">
+          <ManualTabContent 
             selectedTemplate={selectedTemplate}
             selectedTechniques={selectedTechniques}
             emulationName={emulationName}

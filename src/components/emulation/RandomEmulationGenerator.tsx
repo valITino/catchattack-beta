@@ -6,25 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
-import { Dices, PieChart, Shuffle, Settings2, Clock } from "lucide-react";
-
-// Mock data for tactics
-const tactics = [
-  { id: "TA0001", name: "Initial Access", selected: true },
-  { id: "TA0002", name: "Execution", selected: true },
-  { id: "TA0003", name: "Persistence", selected: true },
-  { id: "TA0004", name: "Privilege Escalation", selected: true },
-  { id: "TA0005", name: "Defense Evasion", selected: true },
-  { id: "TA0006", name: "Credential Access", selected: false },
-  { id: "TA0007", name: "Discovery", selected: false },
-  { id: "TA0008", name: "Lateral Movement", selected: false },
-  { id: "TA0009", name: "Collection", selected: false },
-  { id: "TA0010", name: "Exfiltration", selected: false },
-  { id: "TA0011", name: "Command and Control", selected: false },
-  { id: "TA0040", name: "Impact", selected: false },
-];
+import { Dices, Settings2, Clock } from "lucide-react";
+import TacticsList from "./random-generator/TacticsList";
+import DeployTargetsSelector from "./random-generator/DeployTargetsSelector";
+import FrequencySelector from "./random-generator/FrequencySelector";
 
 interface RandomEmulationGeneratorProps {
   onGenerate: (config: EmulationConfig) => void;
@@ -45,11 +31,9 @@ const RandomEmulationGenerator = ({ onGenerate, automated = false }: RandomEmula
   const [complexity, setComplexity] = useState<string>("medium");
   const [techniqueCount, setTechniqueCount] = useState<number>(5);
   const [selectedTactics, setSelectedTactics] = useState<string[]>(
-    tactics.filter(t => t.selected).map(t => t.id)
+    ["TA0001", "TA0002", "TA0003", "TA0004", "TA0005"]
   );
   const [immediate, setImmediate] = useState<boolean>(true);
-  
-  // New states for automation
   const [isAutomated, setIsAutomated] = useState<boolean>(automated);
   const [frequency, setFrequency] = useState<string>("daily");
   const [deployTargets, setDeployTargets] = useState<string[]>(["elastic"]);
@@ -157,91 +141,28 @@ const RandomEmulationGenerator = ({ onGenerate, automated = false }: RandomEmula
 
         <div className="space-y-2">
           <Label>MITRE Tactics</Label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {tactics.map((tactic) => (
-              <div key={tactic.id} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={tactic.id}
-                  checked={selectedTactics.includes(tactic.id)}
-                  onCheckedChange={() => toggleTactic(tactic.id)}
-                  className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
-                />
-                <Label htmlFor={tactic.id} className="text-sm cursor-pointer">
-                  {tactic.name}
-                </Label>
-              </div>
-            ))}
-          </div>
+          <TacticsList 
+            selectedTactics={selectedTactics} 
+            onTacticToggle={toggleTactic} 
+          />
         </div>
         
         {automated && (
           <>
             <div className="space-y-2 pt-2">
               <Label>Execution Frequency</Label>
-              <Select
-                value={frequency}
-                onValueChange={setFrequency}
-              >
-                <SelectTrigger className="bg-cyber-darker border-cyber-primary/20">
-                  <SelectValue placeholder="Select frequency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
+              <FrequencySelector 
+                frequency={frequency} 
+                onFrequencyChange={setFrequency} 
+              />
             </div>
             
             <div className="space-y-2 pt-2">
               <Label>Deploy Rules To</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="elastic"
-                    checked={deployTargets.includes("elastic")}
-                    onCheckedChange={() => toggleDeployTarget("elastic")}
-                    className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
-                  />
-                  <Label htmlFor="elastic" className="text-sm cursor-pointer">
-                    Elastic Security
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="splunk"
-                    checked={deployTargets.includes("splunk")}
-                    onCheckedChange={() => toggleDeployTarget("splunk")}
-                    className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
-                  />
-                  <Label htmlFor="splunk" className="text-sm cursor-pointer">
-                    Splunk
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="sentinel"
-                    checked={deployTargets.includes("sentinel")}
-                    onCheckedChange={() => toggleDeployTarget("sentinel")}
-                    className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
-                  />
-                  <Label htmlFor="sentinel" className="text-sm cursor-pointer">
-                    Microsoft Sentinel
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="qradar"
-                    checked={deployTargets.includes("qradar")}
-                    onCheckedChange={() => toggleDeployTarget("qradar")}
-                    className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
-                  />
-                  <Label htmlFor="qradar" className="text-sm cursor-pointer">
-                    IBM QRadar
-                  </Label>
-                </div>
-              </div>
+              <DeployTargetsSelector 
+                deployTargets={deployTargets}
+                onDeployTargetToggle={toggleDeployTarget}
+              />
             </div>
           </>
         )}
@@ -270,7 +191,7 @@ const RandomEmulationGenerator = ({ onGenerate, automated = false }: RandomEmula
             </>
           ) : (
             <>
-              <Shuffle className="mr-2 h-4 w-4" /> Generate Random Emulation
+              <Dices className="mr-2 h-4 w-4" /> Generate Random Emulation
             </>
           )}
         </Button>

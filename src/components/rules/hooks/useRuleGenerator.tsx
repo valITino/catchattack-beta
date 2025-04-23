@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { toast } from "@/components/ui/use-toast";
-import { GenerationResult } from "../types/generator";
+import { GenerationResult, TechniqueReference } from "../types/generator";
 import { simulateGenerationResults, sampleTechniques, getAtomicTests } from "../generator/generatorService";
 
 export const useRuleGenerator = () => {

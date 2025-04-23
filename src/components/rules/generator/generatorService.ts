@@ -1,5 +1,5 @@
 
-import { AtomicTest, GenerationResult, GeneratorOption, SigmaRuleTemplate } from "../types/generator";
+import { AtomicTest, GenerationResult, GeneratorOption, SigmaRuleTemplate, GeneratedRule, TechniqueReference } from "../types/generator";
 
 // Generator options with proper typing for the category
 export const generatorOptions: GeneratorOption[] = [
@@ -27,7 +27,7 @@ export const generatorOptions: GeneratorOption[] = [
 ];
 
 // Sample techniques for the UI
-export const sampleTechniques = [
+export const sampleTechniques: TechniqueReference[] = [
   { id: "T1078", name: "Valid Accounts", tactic: "Initial Access" },
   { id: "T1566", name: "Phishing", tactic: "Initial Access" },
   { id: "T1059", name: "Command and Scripting Interpreter", tactic: "Execution" },
@@ -132,7 +132,7 @@ export const simulateGenerationResults = (optionId: string): GenerationResult =>
   const ruleCount = Math.floor(Math.random() * 6) + 3;
   
   // Generate rules based on both mock data and incorporating real techniques
-  const rules = Array.from({ length: ruleCount }, (_, i) => {
+  const rules: GeneratedRule[] = Array.from({ length: ruleCount }, (_, i) => {
     // Select a technique randomly from our sample
     const technique = sampleTechniques[Math.floor(Math.random() * sampleTechniques.length)];
     
@@ -151,12 +151,30 @@ export const simulateGenerationResults = (optionId: string): GenerationResult =>
       
     const severity = ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)];
     
+    // Convert atomic tests to references
+    const atomicTestReferences = atomicTests.length > 0 ? 
+      atomicTests.map(test => ({ id: test.id, name: test.name })) : 
+      undefined;
+      
+    // Generate data source recommendations
+    const dataSourceRecommendations = Math.random() > 0.5 ? 
+      ["Windows Event Logs", "Sysmon", "EDR Telemetry"].slice(0, Math.floor(Math.random() * 3) + 1) : 
+      undefined;
+      
+    // Generate efficacy note
+    const efficacyNote = Math.random() > 0.7 ? 
+      "This rule may generate false positives in development environments" : 
+      undefined;
+      
     return {
       id: `rule-${i + 1}`,
       title,
       description,
       severity,
-      technique: technique.id
+      technique: technique.id,
+      atomicTestReferences,
+      dataSourceRecommendations,
+      efficacyNote
     };
   });
   
@@ -172,13 +190,13 @@ export const simulateGenerationResults = (optionId: string): GenerationResult =>
   // Add analysis insights from either Sigma or Atomic Red Team data
   const analysis = [
     {
-      type: Math.random() > 0.7 ? "warning" : "info",
+      type: Math.random() > 0.7 ? "warning" as const : "info" as const,
       message: Math.random() > 0.5 ? 
         "Some techniques may require additional context for higher fidelity detection" : 
         "Rules generated using validated Atomic Red Team test data"
     },
     {
-      type: "info",
+      type: "info" as const,
       message: `${optionId === 'log-analysis' ? 'Log patterns' : 'Behavior patterns'} mapped to ${statistics.techniquesCovered} MITRE ATT&CK techniques`
     }
   ];

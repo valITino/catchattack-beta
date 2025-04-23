@@ -19,13 +19,21 @@ export interface GenerationResult {
     type: "info" | "warning";
     message: string;
   }[];
-  rules: {
+  rules: GeneratedRule[];
+}
+
+export interface GeneratedRule {
+  id: string;
+  title: string;
+  description: string;
+  severity: string;
+  technique: string;
+  atomicTestReferences?: {
     id: string;
-    title: string;
-    description: string;
-    severity: string;
-    technique: string;
+    name: string;
   }[];
+  dataSourceRecommendations?: string[];
+  efficacyNote?: string;
 }
 
 // Interfaces for Atomic Red Team integration
@@ -61,4 +69,10 @@ export interface SigmaRuleTemplate {
   falsepositives?: string[];
   level: string;
   tags?: string[];
+}
+
+export interface TechniqueReference {
+  id: string;
+  name: string;
+  tactic: string;
 }

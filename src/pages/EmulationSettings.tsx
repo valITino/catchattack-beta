@@ -1,8 +1,6 @@
-
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Info, Play, Clock, Shuffle } from "lucide-react";
+import { Clock, Shuffle } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { TemplatesTab } from "@/components/emulation/settings/TemplatesTab";
 import { TechniquesTab } from "@/components/emulation/settings/TechniquesTab";
@@ -11,9 +9,9 @@ import { TargetSystems } from "@/components/emulation/settings/TargetSystems";
 import { AutomationSettings } from "@/components/emulation/settings/AutomationSettings";
 import EmulationScheduler, { EmulationSchedule } from "@/components/emulation/EmulationScheduler";
 import RandomEmulationGenerator, { EmulationConfig } from "@/components/emulation/RandomEmulationGenerator";
-import { Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmulationHeader } from "@/components/emulation/settings/EmulationHeader";
+import { ScheduledEmulationsList } from "@/components/emulation/settings/ScheduledEmulationsList";
+import { RandomEmulationResults } from "@/components/emulation/settings/RandomEmulationResults";
 
 // Mock data for predefined TTPs (Tactics, Techniques, Procedures)
 const ttps = [
@@ -71,8 +69,6 @@ const EmulationSettings = () => {
   const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
   const [autoGenerateRules, setAutoGenerateRules] = useState<boolean>(true);
   const [autoPushToSiem, setAutoPushToSiem] = useState<boolean>(false);
-  
-  // New state variables for scheduled and random emulations
   const [scheduledEmulations, setScheduledEmulations] = useState<EmulationSchedule[]>([]);
   const [randomEmulationConfig, setRandomEmulationConfig] = useState<EmulationConfig | null>(null);
   const [activeTabMain, setActiveTabMain] = useState<string>("manual");
@@ -138,16 +134,13 @@ const EmulationSettings = () => {
     });
   };
 
-  // Handler for scheduling emulation
   const handleScheduleEmulation = (schedule: EmulationSchedule) => {
     setScheduledEmulations([...scheduledEmulations, schedule]);
   };
 
-  // Handler for random emulation generation
   const handleRandomEmulation = (config: EmulationConfig) => {
     setRandomEmulationConfig(config);
     
-    // If immediate execution is selected
     if (config.immediate) {
       toast({
         title: "Random Emulation Started",
@@ -158,15 +151,7 @@ const EmulationSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Adversary Emulation Configuration</h1>
-        <Button 
-          onClick={handleStartEmulation}
-          className="bg-cyber-primary hover:bg-cyber-primary/90"
-        >
-          <Play className="mr-2 h-4 w-4" /> Start Emulation
-        </Button>
-      </div>
+      <EmulationHeader onStart={handleStartEmulation} />
 
       <Tabs value={activeTabMain} onValueChange={setActiveTabMain} className="space-y-4">
         <TabsList className="grid w-full max-w-md grid-cols-3">
@@ -230,90 +215,19 @@ const EmulationSettings = () => {
         <TabsContent value="scheduled" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <EmulationScheduler onSchedule={handleScheduleEmulation} />
-
-            <Card className="cyber-card">
-              <CardHeader>
-                <CardTitle>Scheduled Emulations</CardTitle>
-                <CardDescription>List of upcoming emulation runs</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {scheduledEmulations.length > 0 ? (
-                  scheduledEmulations.map((schedule, index) => (
-                    <div key={index} className="p-3 border border-cyber-primary/20 rounded-md">
-                      <div className="flex justify-between">
-                        <div>
-                          <h3 className="font-medium">
-                            {schedule.frequency === "once" ? "One-time" : schedule.frequency} emulation
-                          </h3>
-                          <p className="text-sm text-gray-400">
-                            {schedule.frequency === "once" && schedule.startDate 
-                              ? `On ${schedule.startDate.toLocaleDateString()} at ${schedule.time}` 
-                              : `Every ${schedule.frequency === "daily" ? "day" : 
-                                 schedule.frequency === "weekly" ? "week" : "month"} at ${schedule.time}`}
-                          </p>
-                          {schedule.days.length > 0 && (
-                            <div className="flex gap-1 mt-1 flex-wrap">
-                              {schedule.days.map(day => (
-                                <Badge key={day} variant="outline" className="text-xs">{day.substring(0,3)}</Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => {
-                            setScheduledEmulations(scheduledEmulations.filter((_, i) => i !== index));
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="mt-2 flex items-center gap-2">
-                        {schedule.randomize && (
-                          <Badge className="bg-cyber-accent/10 border-cyber-accent text-xs">Randomized</Badge>
-                        )}
-                        {schedule.autoGenerateRules && (
-                          <Badge className="bg-cyber-success/10 border-cyber-success text-xs">Auto-rules</Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center text-gray-400 p-6">
-                    No scheduled emulations yet
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ScheduledEmulationsList 
+              emulations={scheduledEmulations}
+              onDelete={(index) => {
+                setScheduledEmulations(scheduledEmulations.filter((_, i) => i !== index));
+              }}
+            />
           </div>
         </TabsContent>
 
         <TabsContent value="random" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <RandomEmulationGenerator onGenerate={handleRandomEmulation} />
-
-            <Card className="cyber-card">
-              <CardHeader>
-                <CardTitle>Generated Configuration</CardTitle>
-                <CardDescription>Details of your randomly generated attack emulation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {randomEmulationConfig ? (
-                  <div className="space-y-4">
-                    <div>
-                      {/* Add content for displaying generated configuration */}
-                      Complexity: {randomEmulationConfig.complexity}
-                      Techniques: {randomEmulationConfig.techniqueCount}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-400 p-6">
-                    No random emulation configuration generated
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <RandomEmulationResults config={randomEmulationConfig} />
           </div>
         </TabsContent>
       </Tabs>

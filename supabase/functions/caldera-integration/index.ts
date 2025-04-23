@@ -15,14 +15,17 @@ serve(async (req) => {
   try {
     const { endpoint, method = 'GET', payload, tenantId } = await req.json();
     
-    if (!endpoint || !tenantId) {
+    if (!endpoint) {
       return new Response(
-        JSON.stringify({ error: "Missing required parameters" }),
+        JSON.stringify({ error: "Missing required endpoint parameter" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    console.log(`CALDERA API request for tenant ${tenantId}, endpoint: ${endpoint}, method: ${method}`);
+    // Use default tenant if not provided
+    const tenant = tenantId || 'default';
+    
+    console.log(`CALDERA API request for tenant ${tenant}, endpoint: ${endpoint}, method: ${method}`);
     
     // Get CALDERA credentials from environment variables
     // In a real implementation, these would be tenant-specific
@@ -52,9 +55,20 @@ serve(async (req) => {
     
     const data = await response.json();
     
+    // Add request metadata to the response
+    const enrichedData = {
+      ...data,
+      _meta: {
+        timestamp: new Date().toISOString(),
+        tenant,
+        endpoint,
+        requestId: crypto.randomUUID()
+      }
+    };
+    
     // Process and return the response
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(enrichedData),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
     

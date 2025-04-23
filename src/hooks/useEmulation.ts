@@ -11,6 +11,13 @@ export function useEmulation() {
   async function startEmulation(request: EmulationRequest) {
     setLoading(true);
     try {
+      // Validate request before sending
+      if (!request.techniques || request.techniques.length === 0) {
+        throw new Error("No techniques selected for emulation");
+      }
+      
+      console.log('Starting emulation with request:', request);
+
       const { data, error } = await supabase.functions.invoke('caldera-integration', {
         body: { 
           endpoint: 'operations',
@@ -32,13 +39,13 @@ export function useEmulation() {
       setResult(data);
       toast({
         title: "Emulation Started",
-        description: `Operation ${request.techniques.length} technique(s) initiated`
+        description: `Operation with ${request.techniques.length} technique(s) initiated`,
       });
     } catch (err) {
       console.error('Error starting emulation:', err);
       toast({
         title: "Error",
-        description: "Failed to start emulation",
+        description: err instanceof Error ? err.message : "Failed to start emulation",
         variant: "destructive"
       });
     } finally {
@@ -46,5 +53,8 @@ export function useEmulation() {
     }
   }
 
-  return { startEmulation, loading, result };
+  // Clear the result when no longer needed
+  const clearResult = () => setResult(null);
+
+  return { startEmulation, loading, result, clearResult };
 }

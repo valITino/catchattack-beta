@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,7 @@ import EmulationScheduler, { EmulationSchedule } from "@/components/emulation/Em
 import RandomEmulationGenerator, { EmulationConfig } from "@/components/emulation/RandomEmulationGenerator";
 import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Mock data for predefined TTPs (Tactics, Techniques, Procedures)
 const ttps = [
@@ -225,12 +227,10 @@ const EmulationSettings = () => {
           </Tabs>
         </TabsContent>
 
-        {/* Scheduled emulations content */}
         <TabsContent value="scheduled" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <EmulationScheduler onSchedule={handleScheduleEmulation} />
 
-            
             <Card className="cyber-card">
               <CardHeader>
                 <CardTitle>Scheduled Emulations</CardTitle>
@@ -289,12 +289,10 @@ const EmulationSettings = () => {
           </div>
         </TabsContent>
 
-        {/* Random emulation generator content */}
         <TabsContent value="random" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <RandomEmulationGenerator onGenerate={handleRandomEmulation} />
 
-            
             <Card className="cyber-card">
               <CardHeader>
                 <CardTitle>Generated Configuration</CardTitle>
@@ -304,3 +302,23 @@ const EmulationSettings = () => {
                 {randomEmulationConfig ? (
                   <div className="space-y-4">
                     <div>
+                      {/* Add content for displaying generated configuration */}
+                      Complexity: {randomEmulationConfig.complexity}
+                      Techniques: {randomEmulationConfig.techniqueCount}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 p-6">
+                    No random emulation configuration generated
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default EmulationSettings;

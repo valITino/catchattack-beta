@@ -1,18 +1,15 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, Shuffle } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { TemplatesTab } from "@/components/emulation/settings/TemplatesTab";
-import { TechniquesTab } from "@/components/emulation/settings/TechniquesTab";
-import { EmulationParameters } from "@/components/emulation/settings/EmulationParameters";
-import { TargetSystems } from "@/components/emulation/settings/TargetSystems";
-import { AutomationSettings } from "@/components/emulation/settings/AutomationSettings";
+import { ManualConfiguration } from "@/components/emulation/settings/ManualConfiguration";
+import { EmulationHeader } from "@/components/emulation/settings/EmulationHeader";
 import EmulationScheduler, { EmulationSchedule } from "@/components/emulation/EmulationScheduler";
 import RandomEmulationGenerator, { EmulationConfig } from "@/components/emulation/RandomEmulationGenerator";
-import { EmulationHeader } from "@/components/emulation/settings/EmulationHeader";
 import { ScheduledEmulationsList } from "@/components/emulation/settings/ScheduledEmulationsList";
 import { RandomEmulationResults } from "@/components/emulation/settings/RandomEmulationResults";
-import { ttps, adversaryTemplates, targetSystems } from "@/data/emulationData";
+import { adversaryTemplates } from "@/data/emulationData";
 
 const EmulationSettings = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
@@ -38,19 +35,19 @@ const EmulationSettings = () => {
   };
 
   const toggleTechnique = (techniqueId: string) => {
-    if (selectedTechniques.includes(techniqueId)) {
-      setSelectedTechniques(selectedTechniques.filter(id => id !== techniqueId));
-    } else {
-      setSelectedTechniques([...selectedTechniques, techniqueId]);
-    }
+    setSelectedTechniques(
+      selectedTechniques.includes(techniqueId)
+        ? selectedTechniques.filter(id => id !== techniqueId)
+        : [...selectedTechniques, techniqueId]
+    );
   };
 
   const toggleSystem = (systemId: string) => {
-    if (selectedSystems.includes(systemId)) {
-      setSelectedSystems(selectedSystems.filter(id => id !== systemId));
-    } else {
-      setSelectedSystems([...selectedSystems, systemId]);
-    }
+    setSelectedSystems(
+      selectedSystems.includes(systemId)
+        ? selectedSystems.filter(id => id !== systemId)
+        : [...selectedSystems, systemId]
+    );
   };
 
   const handleStartEmulation = () => {
@@ -114,55 +111,24 @@ const EmulationSettings = () => {
         </TabsList>
 
         <TabsContent value="manual" className="space-y-4">
-          <Tabs defaultValue="template" className="space-y-4">
-            <TabsList className="grid w-full max-w-md grid-cols-3">
-              <TabsTrigger value="template">Template</TabsTrigger>
-              <TabsTrigger value="techniques">Techniques</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="template">
-              <TemplatesTab 
-                templates={adversaryTemplates}
-                selectedTemplate={selectedTemplate}
-                onTemplateSelect={handleTemplateSelect}
-              />
-            </TabsContent>
-
-            <TabsContent value="techniques">
-              <TechniquesTab 
-                techniques={ttps}
-                selectedTechniques={selectedTechniques}
-                onTechniqueToggle={toggleTechnique}
-              />
-            </TabsContent>
-
-            <TabsContent value="settings" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <EmulationParameters 
-                  name={emulationName}
-                  description={emulationDescription}
-                  onNameChange={setEmulationName}
-                  onDescriptionChange={setEmulationDescription}
-                  duration={duration}
-                  onDurationChange={setDuration}
-                />
-
-                <TargetSystems 
-                  systems={targetSystems}
-                  selectedSystems={selectedSystems}
-                  onSystemToggle={toggleSystem}
-                />
-              </div>
-
-              <AutomationSettings 
-                autoGenerateRules={autoGenerateRules}
-                autoPushToSiem={autoPushToSiem}
-                onAutoGenerateRulesChange={setAutoGenerateRules}
-                onAutoPushToSiemChange={setAutoPushToSiem}
-              />
-            </TabsContent>
-          </Tabs>
+          <ManualConfiguration 
+            selectedTemplate={selectedTemplate}
+            selectedTechniques={selectedTechniques}
+            emulationName={emulationName}
+            emulationDescription={emulationDescription}
+            selectedSystems={selectedSystems}
+            autoGenerateRules={autoGenerateRules}
+            autoPushToSiem={autoPushToSiem}
+            duration={duration}
+            onTemplateSelect={handleTemplateSelect}
+            onTechniqueToggle={toggleTechnique}
+            onEmulationNameChange={setEmulationName}
+            onEmulationDescriptionChange={setEmulationDescription}
+            onSystemToggle={toggleSystem}
+            onAutoGenerateRulesChange={setAutoGenerateRules}
+            onAutoPushToSiemChange={setAutoPushToSiem}
+            onDurationChange={setDuration}
+          />
         </TabsContent>
 
         <TabsContent value="scheduled" className="space-y-4">

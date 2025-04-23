@@ -1,16 +1,14 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Slider } from "@/components/ui/slider";
 import { toast } from "@/components/ui/use-toast";
 import { Dices, Settings2, Clock } from "lucide-react";
 import TacticsList from "./random-generator/TacticsList";
 import DeployTargetsSelector from "./random-generator/DeployTargetsSelector";
 import FrequencySelector from "./random-generator/FrequencySelector";
+import ComplexitySelector from "./random-generator/ComplexitySelector";
+import TechniqueCountSlider from "./random-generator/TechniqueCountSlider";
+import ImmediateExecution from "./random-generator/ImmediateExecution";
 
 interface RandomEmulationGeneratorProps {
   onGenerate: (config: EmulationConfig) => void;
@@ -103,41 +101,15 @@ const RandomEmulationGenerator = ({ onGenerate, automated = false }: RandomEmula
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="complexity">Complexity</Label>
-          <Select
-            value={complexity}
-            onValueChange={setComplexity}
-          >
-            <SelectTrigger id="complexity" className="bg-cyber-darker border-cyber-primary/20">
-              <SelectValue placeholder="Select complexity" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Low - Basic TTPs</SelectItem>
-              <SelectItem value="medium">Medium - Standard TTPs</SelectItem>
-              <SelectItem value="high">High - Advanced TTPs</SelectItem>
-              <SelectItem value="apts">APT - Nation State Level</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="technique-count">Number of Techniques</Label>
-              <span className="text-sm font-medium">{techniqueCount}</span>
-            </div>
-            <Slider 
-              id="technique-count"
-              min={1} 
-              max={15} 
-              step={1} 
-              value={[techniqueCount]} 
-              onValueChange={(value) => setTechniqueCount(value[0])}
-              className="data-[state=checked]:bg-cyber-primary"
-            />
-          </div>
-        </div>
+        <ComplexitySelector 
+          complexity={complexity} 
+          onComplexityChange={setComplexity} 
+        />
+        
+        <TechniqueCountSlider 
+          techniqueCount={techniqueCount}
+          onTechniqueCountChange={setTechniqueCount}
+        />
 
         <div className="space-y-2">
           <Label>MITRE Tactics</Label>
@@ -168,17 +140,10 @@ const RandomEmulationGenerator = ({ onGenerate, automated = false }: RandomEmula
         )}
 
         {!automated && (
-          <div className="flex items-center space-x-2 pt-2">
-            <Checkbox 
-              id="immediate"
-              checked={immediate}
-              onCheckedChange={(checked) => setImmediate(checked as boolean)}
-              className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
-            />
-            <Label htmlFor="immediate" className="cursor-pointer">
-              Execute immediately after generation
-            </Label>
-          </div>
+          <ImmediateExecution 
+            immediate={immediate}
+            onImmediateChange={setImmediate}
+          />
         )}
 
         <Button 

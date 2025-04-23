@@ -1,21 +1,17 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Info, Play, Clock, Shuffle } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { Play, AlertTriangle, Info, PlusCircle, Trash2, Clock, Shuffle } from "lucide-react";
-
-// Import the new components
+import { TemplatesTab } from "@/components/emulation/settings/TemplatesTab";
+import { TechniquesTab } from "@/components/emulation/settings/TechniquesTab";
+import { EmulationParameters } from "@/components/emulation/settings/EmulationParameters";
+import { TargetSystems } from "@/components/emulation/settings/TargetSystems";
+import { AutomationSettings } from "@/components/emulation/settings/AutomationSettings";
 import EmulationScheduler, { EmulationSchedule } from "@/components/emulation/EmulationScheduler";
 import RandomEmulationGenerator, { EmulationConfig } from "@/components/emulation/RandomEmulationGenerator";
+import { Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 // Mock data for predefined TTPs (Tactics, Techniques, Procedures)
 const ttps = [
@@ -78,6 +74,7 @@ const EmulationSettings = () => {
   const [scheduledEmulations, setScheduledEmulations] = useState<EmulationSchedule[]>([]);
   const [randomEmulationConfig, setRandomEmulationConfig] = useState<EmulationConfig | null>(null);
   const [activeTabMain, setActiveTabMain] = useState<string>("manual");
+  const [duration, setDuration] = useState<string>("30");
 
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -169,7 +166,6 @@ const EmulationSettings = () => {
         </Button>
       </div>
 
-      {/* Main tabs for different emulation approaches */}
       <Tabs value={activeTabMain} onValueChange={setActiveTabMain} className="space-y-4">
         <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="manual">Manual</TabsTrigger>
@@ -177,7 +173,6 @@ const EmulationSettings = () => {
           <TabsTrigger value="random"><Shuffle className="h-4 w-4 mr-2" />Random</TabsTrigger>
         </TabsList>
 
-        {/* Manual emulation content (original implementation) */}
         <TabsContent value="manual" className="space-y-4">
           <Tabs defaultValue="template" className="space-y-4">
             <TabsList className="grid w-full max-w-md grid-cols-3">
@@ -186,207 +181,46 @@ const EmulationSettings = () => {
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="template" className="space-y-4">
-              <Card className="cyber-card">
-                <CardHeader>
-                  <CardTitle>Adversary Templates</CardTitle>
-                  <CardDescription>Start with a pre-configured emulation template</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {adversaryTemplates.map(template => (
-                    <div 
-                      key={template.id}
-                      className={`p-4 border rounded-md cursor-pointer transition-colors ${
-                        selectedTemplate === template.id 
-                          ? 'border-cyber-primary bg-cyber-primary/10' 
-                          : 'border-cyber-primary/20 hover:border-cyber-primary/40'
-                      }`}
-                      onClick={() => handleTemplateSelect(template.id)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <h3 className="font-medium">{template.name}</h3>
-                        <Badge variant="outline">{template.complexity}</Badge>
-                      </div>
-                      <p className="text-sm text-gray-400 mt-2">{template.description}</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {template.techniques.map(techId => {
-                          const tech = ttps.find(t => t.id === techId);
-                          return (
-                            <Badge key={techId} variant="secondary" className="text-xs">
-                              {tech?.id}: {tech?.name}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+            <TabsContent value="template">
+              <TemplatesTab 
+                templates={adversaryTemplates}
+                selectedTemplate={selectedTemplate}
+                onTemplateSelect={handleTemplateSelect}
+              />
             </TabsContent>
 
-            <TabsContent value="techniques" className="space-y-4">
-              <Card className="cyber-card">
-                <CardHeader>
-                  <CardTitle>Tactics & Techniques</CardTitle>
-                  <CardDescription>Select specific MITRE ATT&CK techniques to emulate</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {ttps.map(ttp => (
-                      <div 
-                        key={ttp.id}
-                        className="border border-cyber-primary/20 rounded-md p-3"
-                      >
-                        <div className="flex items-start mb-2">
-                          <Checkbox 
-                            id={ttp.id} 
-                            checked={selectedTechniques.includes(ttp.id)}
-                            onCheckedChange={() => toggleTechnique(ttp.id)}
-                            className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary mr-2 mt-1"
-                          />
-                          <div>
-                            <Label 
-                              htmlFor={ttp.id}
-                              className="font-medium cursor-pointer"
-                            >
-                              {ttp.id}: {ttp.name}
-                            </Label>
-                            <Badge 
-                              variant="outline" 
-                              className="ml-2 bg-cyber-accent/10 border-cyber-accent text-xs"
-                            >
-                              {ttp.tactic}
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-400 ml-6">{ttp.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="techniques">
+              <TechniquesTab 
+                techniques={ttps}
+                selectedTechniques={selectedTechniques}
+                onTechniqueToggle={toggleTechnique}
+              />
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="cyber-card">
-                  <CardHeader>
-                    <CardTitle>Emulation Parameters</CardTitle>
-                    <CardDescription>Define the emulation details and scope</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Emulation Name</Label>
-                      <Input 
-                        id="name" 
-                        value={emulationName}
-                        onChange={(e) => setEmulationName(e.target.value)}
-                        className="bg-cyber-darker border-cyber-primary/20"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea 
-                        id="description" 
-                        value={emulationDescription}
-                        onChange={(e) => setEmulationDescription(e.target.value)}
-                        className="min-h-[100px] bg-cyber-darker border-cyber-primary/20"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Duration</Label>
-                      <Select defaultValue="30">
-                        <SelectTrigger className="bg-cyber-darker border-cyber-primary/20">
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="15">15 minutes</SelectItem>
-                          <SelectItem value="30">30 minutes</SelectItem>
-                          <SelectItem value="60">1 hour</SelectItem>
-                          <SelectItem value="120">2 hours</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
+                <EmulationParameters 
+                  name={emulationName}
+                  description={emulationDescription}
+                  onNameChange={setEmulationName}
+                  onDescriptionChange={setEmulationDescription}
+                  duration={duration}
+                  onDurationChange={setDuration}
+                />
 
-                <Card className="cyber-card">
-                  <CardHeader>
-                    <CardTitle>Target Systems</CardTitle>
-                    <CardDescription>Select systems to run the emulation against</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {targetSystems.map(system => (
-                        <div
-                          key={system.id}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox 
-                            id={system.id}
-                            checked={selectedSystems.includes(system.id)}
-                            onCheckedChange={() => toggleSystem(system.id)}
-                            className="data-[state=checked]:bg-cyber-primary data-[state=checked]:border-cyber-primary"
-                          />
-                          <div className="grid gap-1.5">
-                            <Label 
-                              htmlFor={system.id}
-                              className="font-medium cursor-pointer"
-                            >
-                              {system.name}
-                            </Label>
-                            <p className="text-xs text-gray-400">
-                              {system.description}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                <TargetSystems 
+                  systems={targetSystems}
+                  selectedSystems={selectedSystems}
+                  onSystemToggle={toggleSystem}
+                />
               </div>
 
-              <Card className="cyber-card">
-                <CardHeader>
-                  <CardTitle>Automation Settings</CardTitle>
-                  <CardDescription>Configure post-emulation actions</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="auto-generate">Auto-Generate Sigma Rules</Label>
-                      <p className="text-sm text-gray-400">
-                        Automatically create detection rules from discovered vulnerabilities
-                      </p>
-                    </div>
-                    <Switch 
-                      id="auto-generate"
-                      checked={autoGenerateRules}
-                      onCheckedChange={setAutoGenerateRules}
-                      className="data-[state=checked]:bg-cyber-primary"
-                    />
-                  </div>
-                  
-                  <Separator className="my-4" />
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="auto-push">Auto-Push Rules to SIEM</Label>
-                      <p className="text-sm text-gray-400">
-                        Push generated rules to connected SIEM platforms automatically
-                      </p>
-                    </div>
-                    <Switch 
-                      id="auto-push"
-                      checked={autoPushToSiem}
-                      onCheckedChange={setAutoPushToSiem}
-                      className="data-[state=checked]:bg-cyber-primary"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+              <AutomationSettings 
+                autoGenerateRules={autoGenerateRules}
+                autoPushToSiem={autoPushToSiem}
+                onAutoGenerateRulesChange={setAutoGenerateRules}
+                onAutoPushToSiemChange={setAutoPushToSiem}
+              />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -396,6 +230,7 @@ const EmulationSettings = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <EmulationScheduler onSchedule={handleScheduleEmulation} />
 
+            
             <Card className="cyber-card">
               <CardHeader>
                 <CardTitle>Scheduled Emulations</CardTitle>
@@ -459,6 +294,7 @@ const EmulationSettings = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <RandomEmulationGenerator onGenerate={handleRandomEmulation} />
 
+            
             <Card className="cyber-card">
               <CardHeader>
                 <CardTitle>Generated Configuration</CardTitle>
@@ -468,59 +304,3 @@ const EmulationSettings = () => {
                 {randomEmulationConfig ? (
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-sm text-gray-400">Complexity</Label>
-                      <p className="font-medium">{randomEmulationConfig.complexity.toUpperCase()}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm text-gray-400">Techniques</Label>
-                      <p className="font-medium">{randomEmulationConfig.techniqueCount} selected</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm text-gray-400">Tactics</Label>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {randomEmulationConfig.tactics.map(tactic => {
-                          const tacticName = ttps.find(t => t.id === tactic)?.name || tactic;
-                          return (
-                            <Badge key={tactic} variant="outline" className="bg-cyber-primary/10 border-cyber-primary">
-                              {tacticName}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="pt-4">
-                      <Button 
-                        className="w-full bg-cyber-primary hover:bg-cyber-primary/90"
-                        onClick={() => {
-                          toast({
-                            title: "Random Emulation Started",
-                            description: "Random emulation has been executed",
-                          });
-                        }}
-                      >
-                        <Play className="mr-2 h-4 w-4" /> Run This Emulation
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-400 p-6">
-                    No random emulation generated yet. Use the generator to create one.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      <div className="flex items-center p-2 rounded-md bg-cyber-primary/10 border border-cyber-primary/20">
-        <Info className="h-5 w-5 text-cyber-info mr-2" />
-        <span className="text-sm">
-          All emulation activities are conducted in an isolated environment and tagged with specific identifiers for easy cleanup.
-        </span>
-      </div>
-    </div>
-  );
-};
-
-export default EmulationSettings;

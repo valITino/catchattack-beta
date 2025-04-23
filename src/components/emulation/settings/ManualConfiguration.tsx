@@ -90,7 +90,7 @@ export function ManualConfiguration({
           autoGenerateRules={autoGenerateRules}
           autoPushToSiem={autoPushToSiem}
           onAutoGenerateRulesChange={onAutoGenerateRulesChange}
-          onAutoPushToSiemChange={onAutoPushToSiem}
+          onAutoPushToSiemChange={onAutoPushToSiemChange}
         />
       </TabsContent>
     </Tabs>

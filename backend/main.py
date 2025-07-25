@@ -1,12 +1,26 @@
-from fastapi import FastAPI, Depends, HTTPException, Path
+from fastapi import FastAPI, Depends, HTTPException, Path, Request
+from fastapi.responses import JSONResponse
+import uuid
+import logging
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal, init_db, Emulation
 from . import schemas
 from pathlib import Path as FilePath
-from .services import emulator, mitre, sigma, yaml_generator
+from .services import emulator, mitre, sigma, yaml_generator, vm_manager
+from datetime import datetime
 
 app = FastAPI(title="CatchAttack Backend")
+
+
+@app.exception_handler(Exception)
+async def _oops(request: Request, exc: Exception):
+    error_id = uuid.uuid4()
+    logging.exception("Unhandled error %s @ %s", error_id, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"error": "internal_server_error", "id": str(error_id)},
+    )
 
 
 @app.on_event("startup")
@@ -72,7 +86,13 @@ def generate_yaml(
         raise HTTPException(status_code=404, detail="Technique not found")
 
     merged = {
-        "technique": {"id": technique_id, "name": technique.get("name")},
+        "technique": {
+            "id": technique_id,
+            "name": technique.get("name"),
+            "description": technique.get("description"),
+            "platforms": technique.get("x_mitre_platforms", []),
+            "data_sources": technique.get("x_mitre_data_sources", []),
+        },
         "vm": {
             "image": config.image,
             "version": config.version,
@@ -80,12 +100,19 @@ def generate_yaml(
             "ram": config.ram,
             "network": config.network or {},
         },
+        "generated_at": datetime.utcnow().isoformat(),
     }
 
     yaml_path = FilePath("generated") / f"{technique_id}.yaml"
     try:
         yaml_generator.generate_vm_yaml(merged, yaml_path)
+        yaml_text = yaml_path.read_text()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    return {"path": str(yaml_path)}
+    return {"path": str(yaml_path), "yaml": yaml_text}
+
+
+@app.post("/vm/start")
+def start_vm_endpoint(config: schemas.VMConfig):
+    return vm_manager.start_vm(config.dict())

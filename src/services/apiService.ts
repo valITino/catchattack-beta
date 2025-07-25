@@ -9,6 +9,7 @@ export { scheduleService } from './scheduleService';
 export { statusService } from './statusService';
 export { tenantService } from './tenantService';
 export { aiService } from './aiService';
+export { backendService } from './backendService';
 
 /**
  * For backward compatibility, export all services under a single namespace
@@ -23,6 +24,7 @@ import { scheduleService } from './scheduleService';
 import { statusService } from './statusService';
 import { tenantService } from './tenantService';
 import { aiService } from './aiService';
+import { backendService } from './backendService';
 
 export const apiService = {
   ...emulationService,
@@ -32,4 +34,5 @@ export const apiService = {
   ...statusService,
   ...tenantService,
   ...aiService,
+  ...backendService,
 };

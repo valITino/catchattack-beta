@@ -33,7 +33,8 @@ const CalderaIntegration = ({ onVMGenerated, onOperationComplete }: CalderaInteg
     startOperation,
     stopOperation,
     getOperationResults,
-    generateVMFromAgent
+    generateVMFromAgent,
+    startBackendVM
   } = useCaldera();
   
   const [activeTab, setActiveTab] = useState<string>("agents");
@@ -91,6 +92,14 @@ const CalderaIntegration = ({ onVMGenerated, onOperationComplete }: CalderaInteg
     const vmConfig = await generateVMFromAgent(agentId);
     if (vmConfig && onVMGenerated) {
       onVMGenerated(vmConfig);
+    }
+    if (vmConfig) {
+      await startBackendVM({
+        image: 'ubuntu/bionic64',
+        version: 'latest',
+        cpu: 1,
+        ram: 1024,
+      });
     }
   };
   

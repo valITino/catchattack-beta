@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { calderaService } from "@/services/calderaService";
+import { backendService, VMConfig } from "@/services/backendService";
 import { toast } from "@/components/ui/use-toast";
 import { CalderaAgent, CalderaAdversary, CalderaOperation, CalderaAbility, CalderaResult } from "@/types/caldera";
 
@@ -140,6 +141,24 @@ export const useCaldera = () => {
       setIsLoading(false);
     }
   };
+
+  const startBackendVM = async (config: VMConfig) => {
+    try {
+      const result = await backendService.startVM(config);
+      if (result.console_cmd) {
+        toast({
+          title: 'VM Started',
+          description: `SSH using: ${result.console_cmd}`
+        });
+      } else if (result.error) {
+        toast({ title: 'VM Error', description: result.error, variant: 'destructive' });
+      }
+      return result;
+    } catch (err) {
+      toast({ title: 'VM Error', description: (err as Error).message, variant: 'destructive' });
+      return null;
+    }
+  };
   
   return {
     agents,
@@ -153,6 +172,7 @@ export const useCaldera = () => {
     startOperation,
     stopOperation,
     getOperationResults,
-    generateVMFromAgent
+    generateVMFromAgent,
+    startBackendVM
   };
 };

@@ -136,10 +136,12 @@ catchattack/
 
 ### Start Backend API
 
-The Python backend is located in `backend/`. Install dependencies and run:
+The Python backend is located in `backend/`. Install dependencies and set up the environment file:
 
 ```bash
 pip install -r backend/requirements.txt
+cp backend/.env.example backend/.env
+# Edit `backend/.env` and add your configuration.
 uvicorn backend.main:app --reload
 ```
 Interactive docs are available at `http://localhost:8000/docs`.

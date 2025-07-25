@@ -1,7 +1,12 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { aiService } from "@/services/aiService";
+import { getTechniques, startVm, generateYaml, startEmulation } from "@/services/api";
+import { useTechnique } from "@/hooks/useTechnique";
+import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,30 +19,40 @@ interface MitreMatrixProps {
   onTechniqueSelect?: (techniqueId: string) => void;
   coveredTechniques?: string[];
   isInteractive?: boolean;
+  techniques?: MitreAttackTechnique[];
 }
 
 const MitreMatrix: React.FC<MitreMatrixProps> = ({
   selectedTechniques = [],
   onTechniqueSelect,
   coveredTechniques = [],
-  isInteractive = true
+  isInteractive = true,
+  techniques: externalTechniques
 }) => {
   const [techniques, setTechniques] = useState<MitreAttackTechnique[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [tactics, setTactics] = useState<string[]>([]);
+  const [activeTech, setActiveTech] = useState<string | null>(null);
+  const { data: fullData } = useTechnique(activeTech ?? '');
 
   useEffect(() => {
+    if (externalTechniques && externalTechniques.length > 0) {
+      setTechniques(externalTechniques);
+      const uniqueTactics = [...new Set(externalTechniques.map(t => t.tactic))];
+      setTactics(uniqueTactics.sort());
+      setLoading(false);
+      return;
+    }
+
     const fetchMitreTechniques = async () => {
       try {
         setLoading(true);
-        const response = await aiService.getMitreTechniques();
-        
-        if (response && response.techniques) {
-          setTechniques(response.techniques);
-          
-          // Extract unique tactics
-          const uniqueTactics = [...new Set(response.techniques.map(t => t.tactic))];
+        const response = await getTechniques();
+        const data = response.data;
+        if (data && data.techniques) {
+          setTechniques(data.techniques);
+          const uniqueTactics = [...new Set(data.techniques.map(t => t.tactic))];
           setTactics(uniqueTactics.sort());
         } else {
           setError("Invalid response format from MITRE ATT&CK service");
@@ -54,8 +69,9 @@ const MitreMatrix: React.FC<MitreMatrixProps> = ({
   }, []);
 
   const handleTechniqueClick = (techniqueId: string) => {
-    if (isInteractive && onTechniqueSelect) {
-      onTechniqueSelect(techniqueId);
+    if (isInteractive) {
+      setActiveTech(techniqueId);
+      onTechniqueSelect?.(techniqueId);
     }
   };
 
@@ -103,6 +119,7 @@ const MitreMatrix: React.FC<MitreMatrixProps> = ({
   }
 
   return (
+    <Drawer open={!!activeTech} onOpenChange={() => setActiveTech(null)}>
     <Card className="w-full">
       <CardHeader className="pb-2">
         <CardTitle>MITRE ATT&CK Matrix</CardTitle>
@@ -162,6 +179,38 @@ const MitreMatrix: React.FC<MitreMatrixProps> = ({
         </ScrollArea>
       </CardContent>
     </Card>
+    {activeTech && (
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>{fullData?.technique.name || activeTech}</DrawerTitle>
+        </DrawerHeader>
+        <div className="p-4 space-y-4">
+          <p className="text-sm whitespace-pre-line">{fullData?.technique.description}</p>
+          {fullData?.atomic_tests && (
+            <div className="space-y-2">
+              <h4 className="font-semibold">Atomic tests</h4>
+              {fullData.atomic_tests.map((t: any, i: number) => (
+                <div key={i} className="border p-2 rounded">
+                  <div className="flex justify-between">
+                    <span>{t.name}</span>
+                    <Button size="sm" onClick={() => { navigator.clipboard.writeText(t.executor?.command || ''); toast({title:'Copied command'}); }}>Copy</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {Array.isArray(fullData?.caldera_abilities) && (
+            <div className="space-y-1">
+              <h4 className="font-semibold">CALDERA abilities</h4>
+              {fullData.caldera_abilities.map((a: any, i: number) => (
+                <div key={i}>{a.name || a.ability_id}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      </DrawerContent>
+    )}
+    </Drawer>
   );
 };
 

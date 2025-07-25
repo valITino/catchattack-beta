@@ -134,6 +134,22 @@ catchattack/
    npm run build
    ```
 
+### Running Front-end
+
+Create a `.env` file at project root with:
+
+```bash
+VITE_API_URL=http://localhost:8000
+VITE_SUPABASE_URL=https://<project>.supabase.co
+VITE_SUPABASE_ANON_KEY=
+```
+
+Then start the dev server:
+
+```bash
+npm run dev
+```
+
 ### Start Backend API
 
 The Python backend is located in `backend/`. Install dependencies and set up the environment file:

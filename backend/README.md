@@ -18,6 +18,9 @@ The emulator service requires the following variables:
 ```
 SUPABASE_URL=http://localhost:54321
 SUPABASE_ANON_KEY=<your-key>
+CALDERA_URL=
+CALDERA_USER=
+CALDERA_PASS=
 ```
 
 Add these variables to a `.env` file. An example template is provided in
@@ -28,6 +31,10 @@ Add these variables to a `.env` file. An example template is provided in
 uvicorn backend.main:app --reload
 ```
 Visit `http://localhost:8000/docs` for interactive API documentation.
+
+### New Endpoint
+
+`GET /techniques/{id}/full` returns MITRE data combined with Atomic Red Team tests and CALDERA abilities.
 
 ## Directory Overview
 ```

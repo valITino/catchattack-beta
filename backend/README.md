@@ -11,9 +11,21 @@ Install dependencies with:
 pip install -r requirements.txt
 ```
 
+### Environment Variables
+
+The emulator service requires the following variables:
+
+```
+SUPABASE_URL=http://localhost:54321
+SUPABASE_ANON_KEY=<your-key>
+```
+
+Add these variables to a `.env` file. An example template is provided in
+`.env.example`.
+
 ## Running the Server
 ```bash
-uvicorn main:app --reload
+uvicorn backend.main:app --reload
 ```
 Visit `http://localhost:8000/docs` for interactive API documentation.
 

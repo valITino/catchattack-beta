@@ -1,6 +1,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MitreMatrix from "@/components/mitre/MitreMatrix";
+import { useQuery } from '@tanstack/react-query';
+import { getTechniques } from '@/services/api';
 import CoverageAnalysis from "@/components/detection/CoverageAnalysis";
 import DetectionRules from "@/components/detection/DetectionRules";
 import { EmulationResult } from "@/types/backend";
@@ -30,6 +32,7 @@ const CoverageTabContent = ({
   selectedTechniques,
   onTechniqueSelect
 }: CoverageTabContentProps) => {
+  const { data } = useQuery(['techniques'], () => getTechniques().then(r => r.data));
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -46,11 +49,12 @@ const CoverageTabContent = ({
             <CardHeader>Visualization of covered techniques in the MITRE ATT&CK framework</CardHeader>
           </CardHeader>
           <CardContent>
-            <MitreMatrix 
+            <MitreMatrix
               selectedTechniques={selectedTechniques}
               onTechniqueSelect={onTechniqueSelect}
               coveredTechniques={coveredTechniques}
               isInteractive={true}
+              techniques={data?.techniques}
             />
           </CardContent>
         </Card>

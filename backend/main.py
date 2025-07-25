@@ -8,6 +8,7 @@ from .database import SessionLocal, init_db, Emulation
 from . import schemas
 from pathlib import Path as FilePath
 from .services import emulator, mitre, sigma, yaml_generator, vm_manager
+from .services import security_sources
 from datetime import datetime
 
 app = FastAPI(title="CatchAttack Backend")
@@ -63,12 +64,29 @@ def list_techniques():
     return {"techniques": techniques}
 
 
+@app.get("/techniques/{tech_id}/full")
+def full_technique(tech_id: str = Path(..., min_length=1)):
+    data = security_sources.get_full_technique(tech_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Technique not found")
+    return data
+
+
 @app.post("/sigma/{technique_id}")
 def create_sigma(technique_id: str = Path(..., min_length=1)):
+    info = security_sources.get_full_technique(technique_id)
+    if not info:
+        raise HTTPException(status_code=404, detail="Technique not found")
     try:
-        return sigma.generate_sigma_rule(technique_id)
+        rule = sigma.generate_sigma_rule(technique_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    rule.update({
+        "technique": info["technique"],
+        "atomic_tests": info["atomic_tests"],
+        "caldera_abilities": info["caldera_abilities"],
+    })
+    return rule
 
 
 @app.post("/yaml/{technique_id}")
@@ -76,14 +94,10 @@ def generate_yaml(
     config: schemas.VMConfig,
     technique_id: str = Path(..., min_length=1),
 ):
-    try:
-        data = mitre.fetch_techniques()
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"MITRE fetch failed: {e}")
-
-    technique = next((t for t in data if t.get("id") == technique_id), None)
-    if not technique:
+    info = security_sources.get_full_technique(technique_id)
+    if not info:
         raise HTTPException(status_code=404, detail="Technique not found")
+    technique = info["technique"]
 
     merged = {
         "technique": {

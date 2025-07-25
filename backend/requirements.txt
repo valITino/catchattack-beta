@@ -5,3 +5,4 @@ SQLAlchemy
 stix2
 taxii2-client
 PyYAML
+requests

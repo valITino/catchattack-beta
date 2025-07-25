@@ -116,3 +116,8 @@ def generate_yaml(
 @app.post("/vm/start")
 def start_vm_endpoint(config: schemas.VMConfig):
     return vm_manager.start_vm(config.dict())
+
+
+@app.get("/emulations", response_model=list[schemas.Emulation])
+def list_emulations(db: Session = Depends(get_db)):
+    return db.query(Emulation).order_by(Emulation.id.desc()).all()

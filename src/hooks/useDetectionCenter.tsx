@@ -2,8 +2,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { detectionService } from "@/services/detectionService";
-import { useQuery } from '@tanstack/react-query';
-import { apiService } from "@/services/apiService";
+import { useEmulations } from './useEmulations';
 import { EmulationResult } from "@/types/backend";
 
 export function useDetectionCenter() {
@@ -22,15 +21,12 @@ export function useDetectionCenter() {
   } | null>(null);
 
   // Fetch recent emulation results
-  const { 
-    data: emulationResults = [], 
+  const {
+    data: emulationResults = [],
     isLoading,
     error,
-    refetch: refetchEmulations
-  } = useQuery({
-    queryKey: ['emulationResults'],
-    queryFn: () => apiService.getEmulationResults(),
-  });
+    refetch: refetchEmulations,
+  } = useEmulations();
 
   // Handle technique selection
   const handleTechniqueSelect = (techniqueId: string) => {

@@ -1,9 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Path
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal, init_db, Emulation
 from . import schemas
-from pathlib import Path
+from pathlib import Path as FilePath
 from .services import emulator, mitre, sigma, yaml_generator
 
 app = FastAPI(title="CatchAttack Backend")
@@ -24,7 +24,11 @@ def get_db():
 
 @app.post("/emulate", response_model=schemas.Emulation)
 def start_emulation(payload: schemas.EmulationCreate, db: Session = Depends(get_db)):
-    result = emulator.run_emulation(payload.technique_id)
+    try:
+        result = emulator.run_emulation(payload.technique_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
     emu = Emulation(technique_id=result["technique"], status=result["status"])
     db.add(emu)
     db.commit()
@@ -46,13 +50,42 @@ def list_techniques():
 
 
 @app.post("/sigma/{technique_id}")
-def create_sigma(technique_id: str):
-    return sigma.generate_sigma_rule(technique_id)
+def create_sigma(technique_id: str = Path(..., min_length=1)):
+    try:
+        return sigma.generate_sigma_rule(technique_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/yaml/{technique_id}")
-def generate_yaml(technique_id: str):
-    config = {"technique": technique_id, "vm": {"image": "ubuntu", "version": "22.04"}}
-    yaml_path = Path("generated") / f"{technique_id}.yaml"
-    yaml_generator.generate_vm_yaml(config, yaml_path)
+def generate_yaml(
+    config: schemas.VMConfig,
+    technique_id: str = Path(..., min_length=1),
+):
+    try:
+        data = mitre.fetch_techniques()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"MITRE fetch failed: {e}")
+
+    technique = next((t for t in data if t.get("id") == technique_id), None)
+    if not technique:
+        raise HTTPException(status_code=404, detail="Technique not found")
+
+    merged = {
+        "technique": {"id": technique_id, "name": technique.get("name")},
+        "vm": {
+            "image": config.image,
+            "version": config.version,
+            "cpu": config.cpu,
+            "ram": config.ram,
+            "network": config.network or {},
+        },
+    }
+
+    yaml_path = FilePath("generated") / f"{technique_id}.yaml"
+    try:
+        yaml_generator.generate_vm_yaml(merged, yaml_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     return {"path": str(yaml_path)}

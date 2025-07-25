@@ -1,9 +1,9 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, constr
+from typing import List, Optional, Dict, Any
 
 
 class EmulationCreate(BaseModel):
-    technique_id: str
+    technique_id: constr(min_length=1)
 
 
 class Emulation(BaseModel):
@@ -23,3 +23,11 @@ class Technique(BaseModel):
 
 class TechniqueList(BaseModel):
     techniques: List[Technique]
+
+
+class VMConfig(BaseModel):
+    image: str
+    version: str
+    cpu: int
+    ram: int
+    network: Optional[Dict[str, Any]] = None

@@ -146,6 +146,8 @@ uvicorn backend.main:app --reload
 ```
 Interactive docs are available at `http://localhost:8000/docs`.
 
+> **Note:** The UI renders no data until the backend is running and reachable at `VITE_API_URL`. Mocks have been removed.
+
 ---
 
 ## Usage

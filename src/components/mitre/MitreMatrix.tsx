@@ -1,13 +1,15 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { aiService } from "@/services/aiService";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useQuery } from "@tanstack/react-query";
+import { getTechniques } from "@/services/api";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MitreAttackTechnique } from "@/utils/mitreAttackUtils";
-import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 interface MitreMatrixProps {
   selectedTechniques?: string[];
@@ -22,36 +24,16 @@ const MitreMatrix: React.FC<MitreMatrixProps> = ({
   coveredTechniques = [],
   isInteractive = true
 }) => {
-  const [techniques, setTechniques] = useState<MitreAttackTechnique[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [tactics, setTactics] = useState<string[]>([]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["techniques"],
+    queryFn: getTechniques,
+  });
 
-  useEffect(() => {
-    const fetchMitreTechniques = async () => {
-      try {
-        setLoading(true);
-        const response = await aiService.getMitreTechniques();
-        
-        if (response && response.techniques) {
-          setTechniques(response.techniques);
-          
-          // Extract unique tactics
-          const uniqueTactics = [...new Set(response.techniques.map(t => t.tactic))];
-          setTactics(uniqueTactics.sort());
-        } else {
-          setError("Invalid response format from MITRE ATT&CK service");
-        }
-      } catch (err) {
-        console.error("Error fetching MITRE techniques:", err);
-        setError("Failed to fetch MITRE ATT&CK techniques");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMitreTechniques();
-  }, []);
+  const techniques: MitreAttackTechnique[] = data?.techniques || [];
+  const tactics = React.useMemo(
+    () => [...new Set(techniques.map(t => t.tactic))].sort(),
+    [techniques]
+  );
 
   const handleTechniqueClick = (techniqueId: string) => {
     if (isInteractive && onTechniqueSelect) {
@@ -65,16 +47,11 @@ const MitreMatrix: React.FC<MitreMatrixProps> = ({
     techniques: techniques.filter(t => t.tactic === tactic)
   }));
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className="w-full">
-        <CardContent className="pt-6 flex justify-center items-center" style={{ height: "400px" }}>
-          <div className="text-center">
-            <LoadingSpinner className="mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Loading MITRE ATT&CK Framework...
-            </p>
-          </div>
+        <CardContent className="pt-6">
+          <Skeleton className="w-full h-[400px]" />
         </CardContent>
       </Card>
     );
@@ -82,23 +59,10 @@ const MitreMatrix: React.FC<MitreMatrixProps> = ({
 
   if (error) {
     return (
-      <Card className="w-full border-destructive">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center justify-center text-center space-y-3">
-            <AlertCircle className="h-10 w-10 text-destructive" />
-            <div>
-              <p className="font-semibold">Failed to load MITRE ATT&CK data</p>
-              <p className="text-sm text-muted-foreground">{error}</p>
-            </div>
-            <button 
-              className="flex items-center text-sm text-primary hover:underline" 
-              onClick={() => window.location.reload()}
-            >
-              <RefreshCw className="mr-1 h-4 w-4" /> Retry
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+      <Alert variant="destructive">
+        <AlertTitle>Failed to load MITRE ATT&CK data</AlertTitle>
+        <AlertDescription>{String(error)}</AlertDescription>
+      </Alert>
     );
   }
 

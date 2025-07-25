@@ -43,3 +43,35 @@ backend/
 │  └─ yaml_generator.py # VM YAML generation
 └─ requirements.txt  # Python dependencies
 ```
+
+## VM Requirements
+To use the `/vm/start` endpoint you need [Vagrant](https://www.vagrantup.com/) and [VirtualBox](https://www.virtualbox.org/) installed.
+
+### Installation
+**Windows**
+1. Download and install [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
+2. Download and install [Vagrant](https://developer.hashicorp.com/vagrant/installers).
+
+**macOS**
+1. `brew install --cask virtualbox`
+2. `brew install --cask vagrant`
+
+**Linux**
+```bash
+sudo apt-get install virtualbox vagrant
+```
+
+## Using `/vm/start`
+Send a POST request with the VM configuration:
+```bash
+curl -X POST http://localhost:8000/vm/start \
+  -H 'Content-Type: application/json' \
+  -d '{"image":"ubuntu/bionic64","version":"latest","cpu":1,"ram":2048}'
+```
+The response includes a `console_cmd` field to SSH into the VM if it started successfully.
+
+## Error Format
+All unhandled errors return JSON like:
+```json
+{"error": "internal_server_error", "id": "<uuid>"}
+```

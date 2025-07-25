@@ -179,12 +179,7 @@ npm run lint
 ```
 
 ### Testing
-
-Run the test suite:
-
-```bash
-npm test
-```
+Currently there is no test script configured. This section will be updated once a test suite is added.
 
 ### Creating New Components
 

@@ -74,6 +74,7 @@ This project provides an **end-to-end** "Detection as Code" approach, surpassing
 
 ```
 catchattack/
+├─ backend/                      # FastAPI backend service
 ├─ src/                          # Source code
 │  ├─ components/                # Reusable UI components
 │  │  ├─ detection/             # Detection-related components
@@ -132,6 +133,16 @@ catchattack/
    ```bash
    npm run build
    ```
+
+### Start Backend API
+
+The Python backend is located in `backend/`. Install dependencies and run:
+
+```bash
+pip install -r backend/requirements.txt
+uvicorn backend.main:app --reload
+```
+Interactive docs are available at `http://localhost:8000/docs`.
 
 ---
 

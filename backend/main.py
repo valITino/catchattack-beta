@@ -1,14 +1,25 @@
-from fastapi import FastAPI, Depends, HTTPException, Path, Request
-from fastapi.responses import JSONResponse
-import uuid
+import asyncio
+import json
 import logging
+import os
+import uuid
+import contextlib
+from datetime import datetime
+from pathlib import Path as FilePath
+
+from fastapi import Depends, FastAPI, HTTPException, Path, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from .database import SessionLocal, init_db, Emulation
 from . import schemas
-from pathlib import Path as FilePath
+from .database import (
+    AuditEvent,
+    Emulation,
+    SessionLocal,
+    add_audit_event,
+    init_db,
+)
 from .services import emulator, mitre, sigma, yaml_generator, vm_manager
-from datetime import datetime
 
 app = FastAPI(title="CatchAttack Backend")
 
@@ -26,6 +37,56 @@ async def _oops(request: Request, exc: Exception):
 @app.on_event("startup")
 def startup_event() -> None:
     init_db()
+    bootstrap = os.getenv("KAFKA_BOOTSTRAP")
+    if not bootstrap:
+        return
+    try:
+        from aiokafka import AIOKafkaConsumer
+    except Exception as e:  # pragma: no cover - import error
+        logging.warning("aiokafka unavailable: %s", e)
+        return
+    loop = asyncio.get_event_loop()
+    consumer = AIOKafkaConsumer(
+        "audit.events",
+        bootstrap_servers=bootstrap,
+        value_deserializer=lambda m: m.decode("utf-8"),
+    )
+
+    async def consume() -> None:
+        await consumer.start()
+        try:
+            while True:
+                msg = await consumer.getone()
+                try:
+                    payload = json.loads(msg.value)
+                except json.JSONDecodeError:
+                    continue
+                db = SessionLocal()
+                try:
+                    add_audit_event(
+                        db_session=db,
+                        tenant_id=payload.get("tenant_id"),
+                        type=payload.get("type", ""),
+                        title=payload.get("title", ""),
+                        description=payload.get("description", ""),
+                    )
+                finally:
+                    db.close()
+        except asyncio.CancelledError:
+            pass
+        finally:
+            await consumer.stop()
+
+    app.state.audit_task = loop.create_task(consume())
+
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    task = getattr(app.state, "audit_task", None)
+    if task:
+        task.cancel()
+        with contextlib.suppress(Exception):
+            await task
 
 
 def get_db():
@@ -121,3 +182,34 @@ def start_vm_endpoint(config: schemas.VMConfig):
 @app.get("/emulations", response_model=list[schemas.Emulation])
 def list_emulations(db: Session = Depends(get_db)):
     return db.query(Emulation).order_by(Emulation.id.desc()).all()
+
+
+@app.get("/status")
+def status_summary(db: Session = Depends(get_db)):
+    emulations = db.query(Emulation).count()
+    rules_generated = db.query(AuditEvent).filter(AuditEvent.type == "rule-generated").count()
+    rules_deployed = db.query(AuditEvent).filter(AuditEvent.type == "rule-deployed").count()
+    anomalies_detected = db.query(AuditEvent).filter(AuditEvent.type == "anomaly-detected").count()
+    recent = (
+        db.query(AuditEvent)
+        .order_by(AuditEvent.timestamp.desc())
+        .limit(5)
+        .all()
+    )
+    last_5 = [
+        {
+            "id": e.id,
+            "type": e.type,
+            "title": e.title,
+            "description": e.description,
+            "timestamp": e.timestamp.isoformat(),
+        }
+        for e in recent
+    ]
+    return {
+        "emulations": emulations,
+        "rules_generated": rules_generated,
+        "rules_deployed": rules_deployed,
+        "anomalies_detected": anomalies_detected,
+        "last_5_events": last_5,
+    }

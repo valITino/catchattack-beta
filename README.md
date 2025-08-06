@@ -13,15 +13,17 @@ This project provides an **end-to-end** "Detection as Code" approach, surpassing
 ---
 
 ## Table of Contents
-1. [Overview](#overview)  
-2. [Features](#features)  
-3. [Technologies](#technologies)  
-4. [Project Structure](#project-structure)  
-5. [Installation & Setup](#installation--setup)  
-6. [Usage](#usage)  
-7. [Development](#development)
-8. [Contributing](#contributing)  
-9. [License](#license)
+1. [Overview](#overview)
+2. [Features](#features)
+3. [Technologies](#technologies)
+4. [Project Structure](#project-structure)
+5. [Architecture](#architecture)
+6. [Installation & Setup](#installation--setup)
+7. [Usage](#usage)
+8. [Development](#development)
+9. [Integration & Customisation](#integration--customisation)
+10. [Contributing](#contributing)
+11. [License](#license)
 
 ---
 
@@ -103,6 +105,23 @@ catchattack/
 ```
 
 ---
+
+## Architecture
+
+CatchAttack uses an event-driven micro-service design. The FastAPI management
+API interacts with several asynchronous services via Kafka:
+
+- **edge_agent** – publishes asset telemetry as Avro messages.
+- **infra_builder** – consumes asset events to provision Terraform templates and
+  emits audit logs.
+- **rt_script_gen** – produces Atomic Red Team playbook prompts and audit
+  events.
+- **rule_factory** – turns lab findings into draft Sigma rules.
+- **deployer** – validates and pushes rules to external EDR/XDR and scanner
+  platforms.
+
+These services communicate over topics such as `asset.events`, `rules.draft`
+and `audit.events`, allowing the platform to scale and evolve independently.
 
 ## Installation & Setup
 
@@ -209,6 +228,22 @@ npm test
 4. Import and use it in your pages or other components
 
 ---
+
+## Integration & Customisation
+
+- **Edge Agent** – integrate with existing EDR/XDR and vulnerability scanners or
+  perform self-managed discovery using OS tools such as `osquery`, PowerShell or
+  `/proc` when no tools are present.
+- **Infra Builder** – replace the sample Terraform with your own infrastructure
+  templates and ensure a monitoring agent is installed in each lab VM.
+- **RT Script Generator** and **Rule Factory** – currently return stub outputs;
+  connect them to a real LLM for Atomic Red Team script and Sigma rule
+  generation.
+- **Deployer** – stub clients must be replaced to call real EDR/XDR and scanner
+  APIs. Provide `EDR_URL`, `EDR_TOKEN`, `NESSUS_URL` and `NESSUS_TOKEN`
+  environment variables.
+- For production use, move from SQLite to Postgres, secure Kafka with
+  TLS/SASL, and set `KAFKA_BOOTSTRAP` to your broker address.
 
 ## Contributing
 We welcome contributions from the community. To contribute:

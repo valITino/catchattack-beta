@@ -13,6 +13,9 @@ import requests
 from .models import AssetEvent
 
 
+HTTP_TIMEOUT = float(os.getenv("DISCOVERY_HTTP_TIMEOUT", "5"))
+
+
 def collect_from_edr() -> dict | None:
     url = os.getenv("EDR_API_URL")
     if not url:
@@ -22,7 +25,7 @@ def collect_from_edr() -> dict | None:
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
-        resp = requests.get(url, headers=headers, timeout=5)
+        resp = requests.get(url, headers=headers, timeout=HTTP_TIMEOUT)
         if resp.status_code != 200:
             return None
         data = resp.json()
@@ -44,7 +47,7 @@ def collect_from_scanner() -> dict | None:
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
-        resp = requests.get(url, headers=headers, timeout=5)
+        resp = requests.get(url, headers=headers, timeout=HTTP_TIMEOUT)
         if resp.status_code != 200:
             return None
         data = resp.json()

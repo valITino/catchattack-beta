@@ -231,15 +231,16 @@ npm test
 
 ## Integration & Customisation
 
-- **Edge Agent** – integrates with EDR/XDR and vulnerability scanner APIs when
-  environment variables such as `EDR_API_URL`, `EDR_API_TOKEN`,
-  `NESSUS_API_URL` and `NESSUS_API_TOKEN` are provided. When these are
-  undefined and `EDGE_SELF_DISCOVERY=true`, the agent falls back to
-  self‑managed discovery using `psutil` and optional `osquery`. Use
-  `DISCOVERY_INTERVAL_SECONDS` to control how often an `AssetEvent` is
-  published and `EDGE_TENANT_ID` to tag events. Disable local discovery by
-  setting `EDGE_SELF_DISCOVERY=false` and rely solely on vendor APIs. Example
-  configuration:
+  - **Edge Agent** – integrates with EDR/XDR and vulnerability scanner APIs when
+    environment variables such as `EDR_API_URL`, `EDR_API_TOKEN`,
+    `NESSUS_API_URL` and `NESSUS_API_TOKEN` are provided. When these are
+    undefined and `EDGE_SELF_DISCOVERY=true`, the agent falls back to
+    self‑managed discovery using `psutil` and optional `osquery`. Use
+    `DISCOVERY_INTERVAL_SECONDS` to control how often an `AssetEvent` is
+    published and `EDGE_TENANT_ID` to tag events. `DISCOVERY_HTTP_TIMEOUT`
+    controls the timeout for API calls (default 5s). Disable local discovery by
+    setting `EDGE_SELF_DISCOVERY=false` and rely solely on vendor APIs. Example
+    configuration:
 
   ```bash
   # self-managed discovery

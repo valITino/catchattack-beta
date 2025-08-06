@@ -232,9 +232,9 @@ npm test
 ## Integration & Customisation
 
   - **Edge Agent**
-    - Pulls data from EDR/XDR and vulnerability scanner APIs when `EDR_API_URL` or `NESSUS_API_URL` are set.
-    - Falls back to self‑managed discovery using OS tools when no APIs are configured or when API calls fail.
-    - Use `EDGE_SELF_DISCOVERY`, `DISCOVERY_INTERVAL_SECONDS` and `EDGE_TENANT_ID` to control behaviour.
+    - Calls your EDR/XDR (`EDR_API_URL`, `EDR_API_TOKEN`) or Nessus (`NESSUS_API_URL`, `NESSUS_API_TOKEN`) if those variables are set.
+    - Falls back to self‑discovery when they are not set or fail.
+    - Uses `EDGE_SELF_DISCOVERY`, `DISCOVERY_INTERVAL_SECONDS` and `EDGE_TENANT_ID` to control periodic behaviour.
 - **Infra Builder** – replace the sample Terraform with your own infrastructure
   templates and ensure a monitoring agent is installed in each lab VM.
 - **RT Script Generator** and **Rule Factory** – currently return stub outputs;

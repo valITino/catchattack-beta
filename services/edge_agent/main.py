@@ -47,7 +47,7 @@ async def startup() -> None:
     interval = int(os.getenv("DISCOVERY_INTERVAL_SECONDS", "3600"))
 
     if enable_discovery:
-        async def periodic_discovery() -> None:
+        async def periodic_discovery():
             global producer
             while True:
                 try:
@@ -58,9 +58,7 @@ async def startup() -> None:
                     await producer.send_and_wait("asset.events", buffer.getvalue())
                 except Exception as exc:
                     import logging
-                    logging.exception(
-                        "Failed to collect or send asset event: %s", exc
-                    )
+                    logging.exception("Failed to collect or send asset event: %s", exc)
                 await asyncio.sleep(interval)
 
         asyncio.create_task(periodic_discovery())

@@ -53,7 +53,6 @@ services:
       KAFKA_BOOTSTRAP: redpanda:9092
       EDGE_SELF_DISCOVERY: "true"
       DISCOVERY_INTERVAL_SECONDS: "3600"
-      DISCOVERY_HTTP_TIMEOUT: "5"
       EDGE_TENANT_ID: "local"
       EDR_API_URL: ""
       EDR_API_TOKEN: ""

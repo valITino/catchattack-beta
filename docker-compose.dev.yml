@@ -47,13 +47,17 @@ services:
     volumes:
       - ./:/app
     command: >
-      sh -c "pip install --no-cache-dir fastapi uvicorn[standard] aiokafka fastavro pydantic psutil requests &&
+      sh -c "pip install --no-cache-dir fastapi uvicorn[standard] aiokafka fastavro pydantic jinja2 psutil requests &&
              uvicorn services.edge_agent.main:app --host 0.0.0.0 --port 8200"
     environment:
       KAFKA_BOOTSTRAP: redpanda:9092
       EDGE_SELF_DISCOVERY: "true"
-      DISCOVERY_INTERVAL_SECONDS: 3600
-      EDGE_TENANT_ID: local
+      DISCOVERY_INTERVAL_SECONDS: "3600"
+      EDGE_TENANT_ID: "local"
+      EDR_API_URL: ""
+      EDR_API_TOKEN: ""
+      NESSUS_API_URL: ""
+      NESSUS_API_TOKEN: ""
     ports:
       - '8200:8200'
     depends_on:

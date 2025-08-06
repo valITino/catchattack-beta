@@ -1,20 +1,17 @@
 """FastAPI edge agent service.
 
-This on-device agent should integrate with existing EDR/XDR or vulnerability
-scanner APIs when available. In environments without such tooling the agent must
-self-discover system information using utilities like ``osquery``, PowerShell,
-or ``/proc`` introspection to gather OS details, installed software, open ports
-and CVE scans. These findings should be sent to the management plane via the
-``/ingest`` endpoint.
-"""
+This service publishes AssetEvent messages to Kafka either from externally
+provided EDR/XDR and vulnerability scanner APIs or via self-managed discovery
+on the host."""
 
 from __future__ import annotations
 
 import asyncio
-import io
 import json
 import logging
 import os
+import time
+from io import BytesIO
 from typing import Any
 
 from aiokafka import AIOKafkaProducer
@@ -28,6 +25,13 @@ app = FastAPI(title="CatchAttack Edge Agent")
 
 _schema: dict[str, Any] | None = None
 
+TENANT_ID = os.getenv("EDGE_TENANT_ID", "default")
+ENABLE_SELF_DISCOVERY = os.getenv("EDGE_SELF_DISCOVERY", "true").lower() not in (
+    "false",
+    "0",
+)
+DISCOVERY_INTERVAL_SECONDS = int(os.getenv("DISCOVERY_INTERVAL_SECONDS", "3600"))
+
 
 def _load_avro_schema() -> dict[str, Any]:
     global _schema
@@ -37,29 +41,21 @@ def _load_avro_schema() -> dict[str, Any]:
     return _schema
 
 
-def _enabled() -> bool:
-    if os.getenv("EDGE_SELF_DISCOVERY", "true").lower() in {"1", "true", "yes"}:
-        return True
-    return bool(os.getenv("EDR_API_URL") or os.getenv("NESSUS_API_URL"))
-
-
-async def _periodic_discovery() -> None:
+async def periodic_discovery() -> None:
     producer: AIOKafkaProducer = app.state.producer
     while True:
         try:
-            event = collect_asset_event(
-                tenant_id=os.getenv("EDGE_TENANT_ID", "default")
-            )
-            buffer = io.BytesIO()
+            event = collect_asset_event(TENANT_ID)
+            buffer = BytesIO()
             schemaless_writer(buffer, _load_avro_schema(), event.dict())
             await producer.send_and_wait("asset.events", buffer.getvalue())
-        except Exception:
-            logging.exception("Failed to collect or publish event")
-        await asyncio.sleep(int(os.getenv("DISCOVERY_INTERVAL_SECONDS", "3600")))
+        except Exception as exc:
+            logging.exception("Periodic discovery failed: %s", exc)
+        await asyncio.sleep(DISCOVERY_INTERVAL_SECONDS)
 
 
 @app.on_event("startup")
-async def _startup() -> None:
+async def startup() -> None:
     bootstrap = os.getenv("KAFKA_BOOTSTRAP")
     if not bootstrap:
         raise RuntimeError("KAFKA_BOOTSTRAP is not set")
@@ -67,12 +63,12 @@ async def _startup() -> None:
     await producer.start()
     app.state.producer = producer
     _load_avro_schema()
-    if _enabled():
-        asyncio.create_task(_periodic_discovery())
+    if ENABLE_SELF_DISCOVERY or os.getenv("EDR_API_URL") or os.getenv("NESSUS_API_URL"):
+        asyncio.create_task(periodic_discovery())
 
 
 @app.on_event("shutdown")
-async def _shutdown() -> None:
+async def shutdown() -> None:
     producer: AIOKafkaProducer | None = getattr(app.state, "producer", None)
     if producer:
         await producer.stop()
@@ -82,7 +78,7 @@ async def _shutdown() -> None:
 async def ingest(event: AssetEvent) -> dict[str, str]:
     if _schema is None:
         raise HTTPException(status_code=500, detail="Schema not loaded")
-    buf = io.BytesIO()
+    buf = BytesIO()
     schemaless_writer(buf, _schema, event.dict())
     data = buf.getvalue()
     producer: AIOKafkaProducer = app.state.producer

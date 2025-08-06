@@ -24,11 +24,11 @@ Kafka.
 
 ## Integration Points and Configuration
 - **Edge Agent** – integrates with EDR/XDR and scanner APIs when provided with
-  `EDR_API_URL`, `EDR_API_TOKEN`, `NESSUS_API_URL` and `NESSUS_API_TOKEN`.
-  When these are absent and `EDGE_SELF_DISCOVERY=true` it performs its own host
-  discovery using `psutil`, local utilities and optional `osquery`. Interval
-  and tenant tagging are controlled via `DISCOVERY_INTERVAL_SECONDS` and
-  `EDGE_TENANT_ID`.
+  `EDR_API_URL`, `EDR_API_TOKEN`, `NESSUS_API_URL` and `NESSUS_API_TOKEN`. If
+  these are absent and `EDGE_SELF_DISCOVERY=true` the agent runs periodic
+  self-managed discovery using `psutil`, local utilities and optional
+  `osquery`. Discovery frequency and tenant tagging are controlled via
+  `DISCOVERY_INTERVAL_SECONDS` and `EDGE_TENANT_ID`.
 - **Infra Builder** – replace the sample Terraform with custom templates and
   install a monitoring agent within each VM.
 - **RT Script Generator / Rule Factory** – connect these services to an LLM for

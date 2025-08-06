@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "AuditEvent",
+  "fields": [
+    {"name": "tenant_id", "type": ["null", "string"], "default": null},
+    {"name": "timestamp", "type": "long"},
+    {"name": "type", "type": "string"},
+    {"name": "title", "type": "string"},
+    {"name": "description", "type": "string"}
+  ]
+}

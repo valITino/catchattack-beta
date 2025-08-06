@@ -1,0 +1,7 @@
+resource "virtual_machine" "{{ name }}" {
+name = "{{ name }}"
+cpu = {{ cpu | int }}
+memory = {{ mem | int }}
+disk = {{ disk | int }}
+# TODO: add network and OS configuration
+}

@@ -1,0 +1,115 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  redpanda:
+    image: docker.redpanda.com/vectorized/redpanda:latest
+    command:
+      - redpanda
+      - start
+      - --smp
+      - '1'
+      - --overprovisioned
+      - --listen-address
+      - 0.0.0.0
+      - --advertised-listeners
+      - PLAINTEXT://redpanda:9092
+      - --check=false
+    ports:
+      - '9092:9092'
+    depends_on:
+      - zookeeper
+
+  mgmt_api:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "pip install --no-cache-dir -r backend/requirements.txt &&
+             uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      SUPABASE_URL: http://localhost:54321
+      SUPABASE_ANON_KEY: local
+      KAFKA_BOOTSTRAP: redpanda:9092
+    ports:
+      - '8000:8000'
+    depends_on:
+      - redpanda
+
+  edge_agent:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "pip install --no-cache-dir fastapi uvicorn[standard] aiokafka fastavro pydantic &&
+             uvicorn services.edge_agent.main:app --host 0.0.0.0 --port 8200"
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+    ports:
+      - '8200:8200'
+    depends_on:
+      - redpanda
+
+  infra_builder:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "pip install --no-cache-dir aiokafka fastavro jinja2 &&
+             python -m services.infra_builder.main"
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+    depends_on:
+      - redpanda
+
+  rt_script_gen:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "pip install --no-cache-dir fastapi uvicorn[standard] aiokafka jinja2 &&
+             uvicorn services.rt_script_gen.main:app --host 0.0.0.0 --port 8300"
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+    ports:
+      - '8300:8300'
+    depends_on:
+      - redpanda
+
+  rule_factory:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "pip install --no-cache-dir aiokafka &&
+             python -m services.rule_factory.main"
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+    depends_on:
+      - redpanda
+
+  deployer:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "pip install --no-cache-dir aiokafka &&
+             python -m services.deployer.main"
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      EDR_URL: http://edr.example.com
+      EDR_TOKEN: devtoken
+      NESSUS_URL: http://nessus.example.com
+      NESSUS_TOKEN: devtoken
+    depends_on:
+      - redpanda

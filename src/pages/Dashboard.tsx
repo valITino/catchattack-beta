@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Badge } from "@/components/ui/badge";
@@ -7,14 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { Shield, AlertTriangle, CheckCircle, Clock, Activity } from "lucide-react";
 import StatusCard from "@/components/dashboard/StatusCard";
 import RecentActivityCard from "@/components/dashboard/RecentActivityCard";
+import { fetchStatus, StatusSummary, AuditEvent } from "@/services/statusService";
 
 const dashboardData = {
-  emulationStats: {
-    total: 24,
-    active: 3,
-    completed: 18,
-    failed: 3,
-  },
   detectionData: [
     { name: "Jan", detected: 65, fixed: 40 },
     { name: "Feb", detected: 75, fixed: 55 },
@@ -70,71 +66,73 @@ const dashboardData = {
       failureTime: "2025-04-06T10:35:00"
     },
   ],
-  recentActivities: [
-    {
-      id: 1,
-      type: "rule-generated",
-      title: "Sigma Rule Generated",
-      description: "12 rules generated for APT29 emulation",
-      timestamp: "2 hours ago"
-    },
-    {
-      id: 2,
-      type: "vulnerability-detected",
-      title: "New Vulnerability",
-      description: "Critical authentication bypass detected in API gateway",
-      timestamp: "4 hours ago"
-    },
-    {
-      id: 3,
-      type: "rule-deployed",
-      title: "Rules Deployed to SIEM",
-      description: "7 rules deployed to Elasticsearch",
-      timestamp: "Yesterday"
-    },
-    {
-      id: 4,
-      type: "emulation-started",
-      title: "Emulation Started",
-      description: "APT29 emulation campaign initiated",
-      timestamp: "Yesterday"
-    }
-  ]
 };
 
 const Dashboard = () => {
+  const [status, setStatus] = useState<StatusSummary | null>(null);
+  const [prevStatus, setPrevStatus] = useState<StatusSummary | null>(null);
+  const [activities, setActivities] = useState<AuditEvent[]>([]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timer;
+    const load = async () => {
+      try {
+        const data = await fetchStatus();
+        setPrevStatus(status);
+        setStatus(data);
+        setActivities(data.last_5_events);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    timer = setInterval(load, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const emulations = status?.emulations ?? 0;
+  const rulesGenerated = status?.rules_generated ?? 0;
+  const rulesDeployed = status?.rules_deployed ?? 0;
+  const anomalies = status?.anomalies_detected ?? 0;
+  const prev = prevStatus;
+  const delta = (current: number, previous: number | undefined) => current - (previous ?? current);
+  const emuDelta = delta(emulations, prev?.emulations);
+  const ruleGenDelta = delta(rulesGenerated, prev?.rules_generated);
+  const ruleDepDelta = delta(rulesDeployed, prev?.rules_deployed);
+  const anomalyDelta = delta(anomalies, prev?.anomalies_detected);
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Detection Operations Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatusCard 
+        <StatusCard
           title="Total Emulations"
-          value={dashboardData.emulationStats.total}
+          value={emulations}
           icon={<Activity className="h-5 w-5 text-cyber-info" />}
-          trend="+4 this month"
-          trendUp={true}
+          trend={`${emuDelta >= 0 ? '+' : ''}${emuDelta}`}
+          trendUp={emuDelta >= 0}
         />
-        <StatusCard 
-          title="Active Campaigns"
-          value={dashboardData.emulationStats.active}
-          icon={<Clock className="h-5 w-5 text-cyber-warning" />}
-          trend="2 ending today"
-          trendUp={false}
-        />
-        <StatusCard 
-          title="Vulnerabilities Fixed"
-          value="85%"
-          icon={<CheckCircle className="h-5 w-5 text-cyber-success" />}
-          trend="+15% from last month"
-          trendUp={true}
-        />
-        <StatusCard 
+        <StatusCard
           title="Rules Generated"
-          value="143"
+          value={rulesGenerated}
           icon={<Shield className="h-5 w-5 text-cyber-primary" />}
-          trend="+28 this month"
-          trendUp={true}
+          trend={`${ruleGenDelta >= 0 ? '+' : ''}${ruleGenDelta}`}
+          trendUp={ruleGenDelta >= 0}
+        />
+        <StatusCard
+          title="Rules Deployed"
+          value={rulesDeployed}
+          icon={<CheckCircle className="h-5 w-5 text-cyber-success" />}
+          trend={`${ruleDepDelta >= 0 ? '+' : ''}${ruleDepDelta}`}
+          trendUp={ruleDepDelta >= 0}
+        />
+        <StatusCard
+          title="Anomalies Detected"
+          value={anomalies}
+          icon={<AlertTriangle className="h-5 w-5 text-cyber-danger" />}
+          trend={`${anomalyDelta >= 0 ? '+' : ''}${anomalyDelta}`}
+          trendUp={anomalyDelta >= 0}
         />
       </div>
 
@@ -285,7 +283,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <RecentActivityCard activities={dashboardData.recentActivities} />
+        <RecentActivityCard activities={activities} />
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import logging
 import os
 from typing import Any
 
@@ -20,11 +21,41 @@ from aiokafka import AIOKafkaProducer
 from fastapi import FastAPI, HTTPException
 from fastavro import schemaless_writer
 
+from .discovery import collect_asset_event
 from .models import AssetEvent
 
 app = FastAPI(title="CatchAttack Edge Agent")
 
 _schema: dict[str, Any] | None = None
+
+
+def _load_avro_schema() -> dict[str, Any]:
+    global _schema
+    if _schema is None:
+        with open("contracts/asset_event.avsc", "rb") as f:
+            _schema = json.load(f)
+    return _schema
+
+
+def _enabled() -> bool:
+    if os.getenv("EDGE_SELF_DISCOVERY", "true").lower() in {"1", "true", "yes"}:
+        return True
+    return bool(os.getenv("EDR_API_URL") or os.getenv("NESSUS_API_URL"))
+
+
+async def _periodic_discovery() -> None:
+    producer: AIOKafkaProducer = app.state.producer
+    while True:
+        try:
+            event = collect_asset_event(
+                tenant_id=os.getenv("EDGE_TENANT_ID", "default")
+            )
+            buffer = io.BytesIO()
+            schemaless_writer(buffer, _load_avro_schema(), event.dict())
+            await producer.send_and_wait("asset.events", buffer.getvalue())
+        except Exception:
+            logging.exception("Failed to collect or publish event")
+        await asyncio.sleep(int(os.getenv("DISCOVERY_INTERVAL_SECONDS", "3600")))
 
 
 @app.on_event("startup")
@@ -35,9 +66,9 @@ async def _startup() -> None:
     producer = AIOKafkaProducer(bootstrap_servers=bootstrap)
     await producer.start()
     app.state.producer = producer
-    global _schema
-    with open("contracts/asset_event.avsc", "rb") as f:
-        _schema = json.load(f)
+    _load_avro_schema()
+    if _enabled():
+        asyncio.create_task(_periodic_discovery())
 
 
 @app.on_event("shutdown")

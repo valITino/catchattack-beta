@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from .discovery import collect_asset_event
 import json
 import os
 from io import BytesIO
@@ -12,7 +13,6 @@ from aiokafka import AIOKafkaProducer
 from fastapi import FastAPI, HTTPException
 from fastavro import schemaless_writer
 
-from .discovery import collect_asset_event
 from .models import AssetEvent
 
 

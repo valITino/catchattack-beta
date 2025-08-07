@@ -1,10 +1,12 @@
+"""Host discovery helpers for the edge agent."""
+
 import os
-import socket
 import platform
-import subprocess
 import shutil
+import socket
+import subprocess
 import time
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 import psutil
 import requests

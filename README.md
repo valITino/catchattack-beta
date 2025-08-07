@@ -160,7 +160,8 @@ The Python backend is located in `backend/`. Install dependencies and set up the
 ```bash
 pip install -r backend/requirements.txt
 cp backend/.env.example backend/.env
-# Edit `backend/.env` and add your configuration.
+cp services/edge_agent/.env.example services/edge_agent/.env
+# Edit `backend/.env` and `services/edge_agent/.env` and add your configuration.
 uvicorn backend.main:app --reload
 ```
 Interactive docs are available at `http://localhost:8000/docs`.

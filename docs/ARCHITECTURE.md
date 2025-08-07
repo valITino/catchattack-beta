@@ -23,19 +23,13 @@ Kafka.
 | `audit.events` | `edge_agent`, `infra_builder`, `rt_script_gen`, `rule_factory`, `deployer` | `mgmt_api` |
 
 ## Integration Points and Configuration
-  - **Edge Agent** – includes built-in periodic discovery. It polls EDR/XDR and
-    scanner APIs when `EDR_API_URL` or `NESSUS_API_URL` (and matching tokens)
-    are provided. If these variables are unset or calls fail and
-    `EDGE_SELF_DISCOVERY=true`, the agent performs local discovery using OS
-    tools. Configure the interval with `DISCOVERY_INTERVAL_SECONDS` and tag
-    events via `EDGE_TENANT_ID`.
-- **Infra Builder** – replace the sample Terraform with custom templates and
-  install a monitoring agent within each VM.
-- **RT Script Generator / Rule Factory** – connect these services to an LLM for
-  real script and rule generation.
-- **Deployer** – implement real API calls to your EDR/XDR and vulnerability
-  scanners. Configure with `EDR_URL`, `EDR_TOKEN`, `NESSUS_URL`,
-  `NESSUS_TOKEN`.
+
+| Component | Notes | Key Environment Variables |
+|-----------|-------|--------------------------|
+| **Edge Agent** | Periodic discovery task. Polls EDR/XDR (`EDR_API_URL`/`EDR_API_TOKEN`) or Nessus (`NESSUS_API_URL`/`NESSUS_API_TOKEN`) when configured; falls back to local discovery when `EDGE_SELF_DISCOVERY` is `true`. Interval controlled by `DISCOVERY_INTERVAL_SECONDS` and events tagged with `EDGE_TENANT_ID`. | `EDGE_SELF_DISCOVERY`, `DISCOVERY_INTERVAL_SECONDS`, `EDGE_TENANT_ID`, `EDR_API_URL`, `EDR_API_TOKEN`, `NESSUS_API_URL`, `NESSUS_API_TOKEN` |
+| **Infra Builder** | Replace the sample Terraform with custom templates and install a monitoring agent within each VM. | – |
+| **RT Script Generator / Rule Factory** | Connect these services to an LLM for real script and rule generation. | – |
+| **Deployer** | Implement real API calls to your EDR/XDR and vulnerability scanners. Configure with `EDR_URL`, `EDR_TOKEN`, `NESSUS_URL`, `NESSUS_TOKEN`. | `EDR_URL`, `EDR_TOKEN`, `NESSUS_URL`, `NESSUS_TOKEN` |
 
 ## Production Considerations
 Use a production-grade database such as Postgres instead of SQLite. Secure Kafka

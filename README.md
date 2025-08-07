@@ -233,9 +233,13 @@ npm test
 ## Integration & Customisation
 
   - **Edge Agent**
-    - Calls your EDR/XDR (`EDR_API_URL`, `EDR_API_TOKEN`) or Nessus (`NESSUS_API_URL`, `NESSUS_API_TOKEN`) if those variables are set.
-    - Falls back to self‑discovery when they are not set or fail.
-    - Uses `EDGE_SELF_DISCOVERY`, `DISCOVERY_INTERVAL_SECONDS` and `EDGE_TENANT_ID` to control periodic behaviour.
+    - Supports external EDR/XDR and Nessus integrations or self‑managed discovery when those APIs are unavailable.
+    - Configure using these environment variables:
+      - `EDGE_SELF_DISCOVERY`: set to `"true"` to enable local discovery when external integrations fail or are unset.
+      - `DISCOVERY_INTERVAL_SECONDS`: cadence for the periodic discovery task.
+      - `EDGE_TENANT_ID`: tag for emitted events.
+      - `EDR_API_URL` / `EDR_API_TOKEN`: optional endpoint and token for your EDR/XDR platform.
+      - `NESSUS_API_URL` / `NESSUS_API_TOKEN`: optional endpoint and token for Nessus.
 - **Infra Builder** – replace the sample Terraform with your own infrastructure
   templates and ensure a monitoring agent is installed in each lab VM.
 - **RT Script Generator** and **Rule Factory** – currently return stub outputs;

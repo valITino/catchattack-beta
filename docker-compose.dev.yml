@@ -50,6 +50,7 @@ services:
       sh -c "pip install --no-cache-dir fastapi uvicorn[standard] aiokafka fastavro pydantic jinja2 psutil requests &&
              uvicorn services.edge_agent.main:app --host 0.0.0.0 --port 8200"
     environment:
+      # Discovery and integration settings
       KAFKA_BOOTSTRAP: redpanda:9092
       EDGE_SELF_DISCOVERY: "true"
       DISCOVERY_INTERVAL_SECONDS: "3600"

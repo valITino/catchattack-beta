@@ -235,10 +235,10 @@ npm run lint
 
 ### Testing
 
-Run the test suite:
+Run the backend test suite:
 
 ```bash
-npm test
+pytest
 ```
 
 ### Creating New Components

@@ -94,7 +94,7 @@ All new features and bug fixes should include tests:
 
 Run tests before submitting a PR:
 ```bash
-npm test
+pytest
 ```
 
 ## Documentation

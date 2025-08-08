@@ -14,6 +14,8 @@ from .prompt_templates import DEFAULT_PROMPT
 app = FastAPI(title="RT Script Generator")
 
 producer: AIOKafkaProducer | None = None
+# Precompile prompt template once at import time
+PROMPT_TEMPLATE = Template(DEFAULT_PROMPT)
 
 
 @app.on_event("startup")
@@ -36,9 +38,9 @@ async def _shutdown() -> None:
 
 
 def _render_prompt(event: AssetEvent) -> str:
+    """Render LLM prompt using top CVEs sorted by CVSS score."""
     cves = sorted(event.vulnerabilities, key=lambda v: v.cvss, reverse=True)[:5]
-    tpl = Template(DEFAULT_PROMPT)
-    return tpl.render(os=event.asset.os, cves=[v.id for v in cves])
+    return PROMPT_TEMPLATE.render(os=event.asset.os, cves=[v.id for v in cves])
 
 
 @app.post("/generate")

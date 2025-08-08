@@ -1,6 +1,6 @@
 COMPOSE = docker compose -f docker/docker-compose.yml
 
-.PHONY: dev demo test migrate lint
+.PHONY: dev demo test migrate lint coverage logs-api otel
 
 dev:
 	$(COMPOSE) up -d --build
@@ -23,4 +23,13 @@ test:
 	@echo "TODO: add tests next chunks"
 
 lint:
-	$(COMPOSE) exec api bash -lc "pip install ruff mypy && ruff backend && mypy backend"
+        $(COMPOSE) exec api bash -lc "pip install ruff mypy && ruff backend && mypy backend"
+
+coverage:
+        $(COMPOSE) exec api bash -lc "pytest -q --cov=app --cov-report=term-missing"
+
+logs-api:
+        $(COMPOSE) logs -f api
+
+otel:
+        @echo "OTEL endpoint: http://localhost:4318 (collector logging exporter)"

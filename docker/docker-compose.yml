@@ -24,6 +24,11 @@ services:
       db:
         condition: service_healthy
     ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   web:
     build:

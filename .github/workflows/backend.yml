@@ -17,5 +17,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -r backend/requirements.txt pytest
-      - run: pytest -q
+      - run: pip install -r backend/requirements.txt pytest pytest-cov
+      - run: docker compose -f docker/docker-compose.yml up -d
+      - run: |
+          for i in {1..30}; do
+            if curl -sSf http://localhost:8000/api/v1/healthz >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+      - run: PYTHONPATH=backend pytest -c backend/pytest.ini
+      - run: docker compose -f docker/docker-compose.yml down
+        if: always()

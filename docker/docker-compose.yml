@@ -20,6 +20,7 @@ services:
       ENV: dev
       DB_DSN: postgresql+psycopg://postgres:postgres@db:5432/catchattack
       CORS_ORIGINS: http://localhost:3000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel:4318
     depends_on:
       db:
         condition: service_healthy
@@ -43,3 +44,10 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
     ports: ["9200:9200"]
+
+  otel:
+    image: otel/opentelemetry-collector:0.103.1
+    command: ["--config=/etc/otel-config.yaml"]
+    volumes:
+      - ./docker/otel-config.yaml:/etc/otel-config.yaml:ro
+    ports: ["4318:4318"]

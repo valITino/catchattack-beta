@@ -1,4 +1,7 @@
 from pydantic_settings import BaseSettings
+from pydantic import Field
+from typing import List, Dict
+
 
 class Settings(BaseSettings):
     env: str = "dev"
@@ -6,8 +9,17 @@ class Settings(BaseSettings):
     api_port: int = 8000
     db_dsn: str = "postgresql+psycopg://postgres:postgres@db:5432/catchattack"
     cors_origins: list[str] = ["http://localhost:3000"]
+    jwt_secret: str = "changeme-in-.env"
+    users: List[Dict[str, str]] = Field(
+        default_factory=lambda: [
+            {"username": "admin", "password": "adminpass", "role": "admin"},
+            {"username": "analyst", "password": "analystpass", "role": "analyst"},
+            {"username": "viewer", "password": "viewerpass", "role": "viewer"},
+        ]
+    )
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()

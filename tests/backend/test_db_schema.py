@@ -1,7 +1,8 @@
 import os
 
-import psycopg
 import pytest
+
+psycopg = pytest.importorskip("psycopg")
 
 
 def test_tables_exist():

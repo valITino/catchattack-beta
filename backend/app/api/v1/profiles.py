@@ -1,9 +1,13 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import List, Dict, Optional
+from uuid import UUID
+
 from app.db.session import SessionLocal
 from app.db import models
-from app.db.schemas import ThreatProfilePayload, ThreatProfileOut
 from app.core.security import require_role
+
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -16,31 +20,38 @@ def get_db():
         db.close()
 
 
-@router.post("", response_model=ThreatProfileOut, summary="Create or update threat profile")
-def create_or_update_profile(
-    payload: ThreatProfilePayload,
+class ProfileIn(BaseModel):
+    organization: str
+    industry: Optional[str] = None
+    tech_stack: List[str] = []
+    intel_tags: List[str] = []
+    weights: Optional[Dict[str, float]] = None
+
+
+class ProfileOut(ProfileIn):
+    id: UUID
+
+
+@router.post("", response_model=ProfileOut, summary="Create or update threat profile for an org")
+def upsert_profile(
+    payload: ProfileIn,
     db: Session = Depends(get_db),
     _user=Depends(require_role("admin", "analyst")),
 ):
-    profile = (
+    # For MVP: enforce single profile per organization (latest wins)
+    tp = (
         db.query(models.ThreatProfile)
         .filter(models.ThreatProfile.organization == payload.organization)
-        .first()
+        .one_or_none()
     )
-    if profile:
-        profile.industry = payload.industry
-        profile.tech_stack = payload.tech_stack or []
-        profile.intel_tags = payload.intel_tags or []
-        profile.weights = payload.weights
-    else:
-        profile = models.ThreatProfile(
-            organization=payload.organization,
-            industry=payload.industry,
-            tech_stack=payload.tech_stack or [],
-            intel_tags=payload.intel_tags or [],
-            weights=payload.weights,
-        )
-    db.add(profile)
+    if not tp:
+        tp = models.ThreatProfile(organization=payload.organization)
+    tp.industry = payload.industry
+    tp.tech_stack = payload.tech_stack or []
+    tp.intel_tags = payload.intel_tags or []
+    tp.weights = payload.weights or None
+    db.add(tp)
     db.commit()
-    db.refresh(profile)
-    return profile
+    db.refresh(tp)
+    return ProfileOut.model_validate(tp)
+

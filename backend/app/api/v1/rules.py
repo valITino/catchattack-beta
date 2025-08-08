@@ -108,26 +108,26 @@ def lint_rule(rule_id: UUID, db: Session = Depends(get_db), _user=Depends(requir
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
     try:
-        from sigma.parser.collection import SigmaCollectionParser
+        from sigma.collection import SigmaCollection
         from sigma.exceptions import SigmaError
 
-        sc = SigmaCollectionParser(rule.sigma_yaml).generate()
+        sc = SigmaCollection.from_yaml(rule.sigma_yaml)
         return {"ok": True, "messages": ["Sigma parsed successfully"], "rules_count": len(sc.rules)}
     except SigmaError as e:
         return {"ok": False, "messages": [str(e)], "rules_count": 0}
 
 def _compile_sigma(yaml_text: str, target: str) -> dict:
-    from sigma.parser.collection import SigmaCollectionParser
-    from sigma.backends.elasticsearch import ElasticsearchBackend
-    from sigma.backends.splunk import SplunkBackend
-    from sigma.backends.sentinel import SentinelBackend
+    from sigma.collection import SigmaCollection
 
-    sc = SigmaCollectionParser(yaml_text).generate()
+    sc = SigmaCollection.from_yaml(yaml_text)
     if target == "elastic":
-        backend = ElasticsearchBackend()
+        from sigma.backends.elasticsearch.elasticsearch_lucene import LuceneBackend
+        backend = LuceneBackend()
     elif target == "splunk":
+        from sigma.backends.splunk.splunk import SplunkBackend
         backend = SplunkBackend()
     elif target == "sentinel":
+        from sigma.backends.sentinel.sentinel import SentinelBackend
         backend = SentinelBackend()
     else:
         raise HTTPException(status_code=400, detail="Unsupported target")

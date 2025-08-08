@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import settings
-from .api import auth, rules
+from .api.v1 import auth, rules
 
 app = FastAPI(title="catchattack-beta API", version="0.1.0")
 
@@ -11,8 +11,8 @@ app.add_middleware(
     allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
 
-app.include_router(auth.router)
-app.include_router(rules.router)
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(rules.router, prefix="/api/v1")
 
 @app.get("/api/v1/healthz")
 def healthz():

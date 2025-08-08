@@ -7,3 +7,4 @@ taxii2-client
 PyYAML
 requests
 aiokafka
+psycopg[binary]

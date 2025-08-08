@@ -1,0 +1,20 @@
+[project]
+name = "catchattack-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.111",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "SQLAlchemy>=2.0",
+  "psycopg[binary]>=3.2",
+  "alembic>=1.13",
+  "python-multipart>=0.0.9",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

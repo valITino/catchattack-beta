@@ -26,16 +26,16 @@ def _prompt_from_template(tpl: str, payload: dict, extras: dict) -> str:
     return s
 
 def _load_tpl(name: str) -> str:
-    p = Path(__file__).resolve().parents[3] / "services" / "ai" / "prompts" / name
+    p = Path(__file__).resolve().parents[2] / "services" / "ai" / "prompts" / name
     return p.read_text(encoding="utf-8")
 
-async def _guard_and_cache(user, key: str, call_coro):
-    if not rl.allow(f"{user.sub}:ai"):
+async def _guard_and_cache(user, key: str, call_fn):
+    if not rl.allow(f"{user.sub}:{getattr(user, 'jti', '')}:ai"):
         raise HTTPException(429, "Rate limit exceeded. Try again in a minute.")
     cached = cache_get(key)
     if cached is not None:
         return cached
-    res = await call_coro
+    res = await call_fn()
     cache_set(key, res)
     return res
 
@@ -44,7 +44,7 @@ async def ai_rules_generate(payload: RuleGenRequest = Body(...), user=Depends(ge
     tpl = _load_tpl("rule_gen.md")
     prompt = _prompt_from_template(tpl, payload.model_dump(), {})
     key = sha256_str("rule_gen:" + prompt + ":" + settings.ai_model)
-    result = await _guard_and_cache(user, key, call_provider(settings.ai_provider, prompt))
+    result = await _guard_and_cache(user, key, lambda: call_provider(settings.ai_provider, prompt))
     # Validate & coerce to schema
     try:
         out = RuleGenResponse.model_validate(result)
@@ -58,7 +58,7 @@ async def ai_attacks_generate(payload: AttackGenRequest = Body(...), user=Depend
     tpl = _load_tpl("attack_gen.md")
     prompt = _prompt_from_template(tpl, payload.model_dump(), extras)
     key = sha256_str("attack_gen:" + prompt + ":" + settings.ai_model)
-    result = await _guard_and_cache(user, key, call_provider(settings.ai_provider, prompt))
+    result = await _guard_and_cache(user, key, lambda: call_provider(settings.ai_provider, prompt))
     try:
         out = AttackGenResponse.model_validate(result)
     except Exception as e:
@@ -76,7 +76,7 @@ async def ai_infra_generate(payload: InfraGenRequest = Body(...), user=Depends(g
     tpl = _load_tpl("infra_gen.md")
     prompt = _prompt_from_template(tpl, payload.model_dump(), {})
     key = sha256_str("infra_gen:" + prompt + ":" + settings.ai_model)
-    result = await _guard_and_cache(user, key, call_provider(settings.ai_provider, prompt))
+    result = await _guard_and_cache(user, key, lambda: call_provider(settings.ai_provider, prompt))
     try:
         out = InfraGenResponse.model_validate(result)
     except Exception as e:

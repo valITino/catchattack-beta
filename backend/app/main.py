@@ -11,6 +11,7 @@ from .api.v1.coverage import router as coverage_router
 from .api.v1.priorities import router as priorities_router
 from .api.v1.tuning import router as tuning_router
 from .api.v1.deploy import router as deploy_router
+from .api.v1.ai import router as ai_router
 
 os.makedirs(settings.artifacts_dir, exist_ok=True)
 os.makedirs(os.path.join(settings.artifacts_dir, "ai_cache"), exist_ok=True)
@@ -37,3 +38,4 @@ app.include_router(coverage_router, prefix="/api/v1")
 app.include_router(priorities_router, prefix="/api/v1")
 app.include_router(tuning_router, prefix="/api/v1")
 app.include_router(deploy_router, prefix="/api/v1")
+app.include_router(ai_router, prefix="/api/v1")

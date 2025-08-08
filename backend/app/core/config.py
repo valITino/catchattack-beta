@@ -17,6 +17,9 @@ class Settings(BaseSettings):
             {"username": "viewer", "password": "viewerpass", "role": "viewer"},
         ]
     )
+    artifacts_dir: str = "/app/backend/artifacts"
+    elastic_url: str = "http://elastic:9200"
+    elastic_index_prefix: str = "events"
 
     class Config:
         env_file = ".env"

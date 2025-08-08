@@ -1,9 +1,14 @@
-import requests, json
+import pytest
+import requests
 
 BASE="http://localhost:8000/api/v1"
 
 def token(role="analyst"):
-    r = requests.post(f"{BASE}/auth/token", data={"username":role, "password":f"{role}pass"})
+    r = requests.post(
+        f"{BASE}/auth/token",
+        data={"username": role, "password": f"{role}pass"},
+        timeout=1,
+    )
     r.raise_for_status()
     return r.json()["access_token"]
 
@@ -18,7 +23,11 @@ def _mk_rule(tok, name, techs, sigma, status="active"):
 
 
 def test_cov_and_priorities_flow():
-    tok = token("analyst"); hdr={"Authorization":f"Bearer {tok}"}
+    try:
+        tok = token("analyst")
+    except requests.exceptions.ConnectionError:
+        pytest.skip("API server not running")
+    hdr = {"Authorization": f"Bearer {tok}"}
 
     sigma1 = """title: Enc
 logsource: {product: windows}

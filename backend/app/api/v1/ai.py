@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
-from typing import Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, Body, Request  # noqa: F401
 from pathlib import Path
-import orjson
-import asyncio
+import structlog
 
-from app.core.security import require_role, get_current_user
+from app.core.security import get_current_user
 from app.core.config import settings
 from app.core.rate_limit import rl
 from app.services.ai.schemas import (
-    RuleGenRequest, RuleGenResponse,
-    AttackGenRequest, AttackGenResponse,
-    InfraGenRequest, InfraGenResponse
+    RuleGenRequest,
+    RuleGenResponse,
+    AttackGenRequest,
+    AttackGenResponse,
+    InfraGenRequest,
+    InfraGenResponse,
 )
 from app.services.ai.utils import to_json, sha256_str
 from app.services.ai.cache import cache_get, cache_set
@@ -19,18 +20,33 @@ from app.services.ai.safety import sanitize_script
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
+MAX = 65536
+
+log = structlog.get_logger()
+
+
+def _size_guard(payload: dict) -> None:
+    import orjson
+
+    if len(orjson.dumps(payload)) > MAX:
+        raise HTTPException(413, "Payload too large")
+
+
 def _prompt_from_template(tpl: str, payload: dict, extras: dict) -> str:
     s = tpl.replace("{{INPUT_JSON}}", to_json(payload))
-    for k,v in extras.items():
+    for k, v in extras.items():
         s = s.replace(f"{{{{{k}}}}}", str(v))
     return s
+
 
 def _load_tpl(name: str) -> str:
     p = Path(__file__).resolve().parents[2] / "services" / "ai" / "prompts" / name
     return p.read_text(encoding="utf-8")
 
+
 async def _guard_and_cache(user, key: str, call_fn):
     if not rl.allow(f"{user.sub}:{getattr(user, 'jti', '')}:ai"):
+        log.warning("rate limit exceeded", user=user.sub)
         raise HTTPException(429, "Rate limit exceeded. Try again in a minute.")
     cached = cache_get(key)
     if cached is not None:
@@ -39,8 +55,10 @@ async def _guard_and_cache(user, key: str, call_fn):
     cache_set(key, res)
     return res
 
+
 @router.post("/rules/generate", response_model=RuleGenResponse, summary="AI: generate Sigma rule")
 async def ai_rules_generate(payload: RuleGenRequest = Body(...), user=Depends(get_current_user)):
+    _size_guard(payload.model_dump())
     tpl = _load_tpl("rule_gen.md")
     prompt = _prompt_from_template(tpl, payload.model_dump(), {})
     key = sha256_str("rule_gen:" + prompt + ":" + settings.ai_model)
@@ -52,8 +70,14 @@ async def ai_rules_generate(payload: RuleGenRequest = Body(...), user=Depends(ge
         raise HTTPException(502, f"Provider returned invalid schema: {e}")
     return out
 
-@router.post("/attacks/generate", response_model=AttackGenResponse, summary="AI: generate safe attack script")
-async def ai_attacks_generate(payload: AttackGenRequest = Body(...), user=Depends(get_current_user)):
+
+@router.post(
+    "/attacks/generate", response_model=AttackGenResponse, summary="AI: generate safe attack script"
+)
+async def ai_attacks_generate(
+    payload: AttackGenRequest = Body(...), user=Depends(get_current_user)
+):
+    _size_guard(payload.model_dump())
     extras = {"STYLE": payload.style}
     tpl = _load_tpl("attack_gen.md")
     prompt = _prompt_from_template(tpl, payload.model_dump(), extras)
@@ -71,8 +95,12 @@ async def ai_attacks_generate(payload: AttackGenRequest = Body(...), user=Depend
     out.script = cleaned
     return out
 
-@router.post("/infra/generate", response_model=InfraGenResponse, summary="AI: generate lab blueprint")
+
+@router.post(
+    "/infra/generate", response_model=InfraGenResponse, summary="AI: generate lab blueprint"
+)
 async def ai_infra_generate(payload: InfraGenRequest = Body(...), user=Depends(get_current_user)):
+    _size_guard(payload.model_dump())
     tpl = _load_tpl("infra_gen.md")
     prompt = _prompt_from_template(tpl, payload.model_dump(), {})
     key = sha256_str("infra_gen:" + prompt + ":" + settings.ai_model)

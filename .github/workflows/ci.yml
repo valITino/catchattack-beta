@@ -77,7 +77,7 @@ jobs:
           npm test
       - name: ESLint
         working-directory: frontend
-        run: npx eslint src --max-warnings=0
+        run: npm run lint
 
   docker-build:
     runs-on: ubuntu-latest

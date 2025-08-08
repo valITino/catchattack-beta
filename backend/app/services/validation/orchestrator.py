@@ -54,10 +54,10 @@ def run_evaluate_elastic(
     results = []
     for rule in rules:
         # Use pySigma backend to produce KQL and wrap in ES DSL query_string
-        from sigma.parser.collection import SigmaCollectionParser
+        from sigma.collection import SigmaCollection
         from sigma.backends.elasticsearch import ElasticsearchBackend
 
-        sc = SigmaCollectionParser(rule.sigma_yaml).generate()
+        sc = SigmaCollection.from_yaml(rule.sigma_yaml)
         backend = ElasticsearchBackend()
         queries = backend.convert(sc)  # list[str]
         total_hits = 0

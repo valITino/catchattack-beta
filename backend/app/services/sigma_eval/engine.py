@@ -1,9 +1,7 @@
 from typing import Iterable, Dict, Any, List, Tuple
 import ujson as json
 from pathlib import Path
-from sigma.parser.collection import SigmaCollectionParser
-from sigma.backends.elasticsearch import ElasticsearchBackend
-from sigma.exceptions import SigmaError
+import yaml
 from elasticsearch import Elasticsearch, helpers
 
 SUPPORTED_LOCAL_OPS = {"contains", "startswith", "endswith", "equals", "re"}
@@ -56,14 +54,8 @@ def evaluate_local(
     - Only supports a single 'sel' and condition: sel
     - With field ops: contains/startswith/endswith/equals/re via Sigma pipe ops mapping
     """
-    sc = SigmaCollectionParser(sigma_yaml).generate()
-    # Use Elasticsearch backend to get KQL? No—parse AST manually is heavy.
-    # For MVP, expect rules like:
-    # field|contains: "X"
-    # field|re: "regex"
-    # We extract first rule, first selection.
-    rule = sc.rules[0]
-    det = rule.detection
+    data = yaml.safe_load(sigma_yaml)
+    det = data.get("detection", {})
     if "condition" not in det or "sel" not in det:
         # non-supported structure
         return 0, []

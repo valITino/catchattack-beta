@@ -14,7 +14,13 @@ export async function login(username:string,password:string){
 export function withAuth(token:string){ 
   const h = { "Authorization":`Bearer ${token}", "Content-Type":"application/json" };
   return {
-    listRules: (technique?:string)=> fetch(`${API_BASE}/api/v1/rules${technique?`?technique=${technique}`:''}`, {headers:h}).then(j),
+    listRules: (technique?: string) =>
+      fetch(
+        API_BASE +
+          '/api/v1/rules' +
+          (technique ? '?technique=' + technique : ''),
+        { headers: h }
+      ).then(j),
     createRule: (body:any)=> fetch(`${API_BASE}/api/v1/rules`, {method:"POST",headers:h,body:JSON.stringify(body)}).then(j),
     lintRule: (id:string)=> fetch(`${API_BASE}/api/v1/rules/${id}/lint`, {method:"POST",headers:h}).then(j),
     compileRule: (id:string,target:string)=> fetch(`${API_BASE}/api/v1/rules/${id}/compile?target=${target}`, {method:"POST",headers:h}).then(j),

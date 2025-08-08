@@ -22,6 +22,16 @@ make -f ops/Makefile dev
 
 Open http://localhost:3000 and http://localhost:8000/docs
 
+### Try the demo
+
+```bash
+make -f ops/Makefile demo
+```
+
+Open http://localhost:3000, click Login Analyst, browse Coverage, run an evaluation in Runs, then Login Admin and deploy in Deploy.
+
+Use AI Workbench to generate Sigma and paste it into /rules create (coming later as UI action).
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Features](#features)

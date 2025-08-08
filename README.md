@@ -12,6 +12,16 @@ This project provides an **end-to-end** "Detection as Code" approach, surpassing
 
 ---
 
+## Quickstart
+
+Prereqs: Docker, Make
+
+```bash
+make -f ops/Makefile dev
+```
+
+Open http://localhost:3000 and http://localhost:8000/docs
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Features](#features)

@@ -1,0 +1,5 @@
+[
+  {"name":"Living off the Land Recon","techniques":["T1059","T1047"]},
+  {"name":"Persistence via Run Keys","techniques":["T1547.001"]},
+  {"name":"Ingress Tool Transfer","techniques":["T1105"]}
+]

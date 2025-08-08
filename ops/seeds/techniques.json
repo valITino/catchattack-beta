@@ -1,0 +1,9 @@
+[
+  {"id":"T1059","name":"Command and Scripting Interpreter"},
+  {"id":"T1059.001","name":"PowerShell"},
+  {"id":"T1105","name":"Ingress Tool Transfer"},
+  {"id":"T1003","name":"Credential Dumping"},
+  {"id":"T1112","name":"Modify Registry"},
+  {"id":"T1547.001","name":"Registry Run Keys"},
+  {"id":"T1047","name":"WMI"}
+]

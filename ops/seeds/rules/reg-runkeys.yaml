@@ -1,0 +1,10 @@
+title: Registry Run Keys Persistence
+id: 33333333-3333-4333-8333-333333333333
+logsource: { product: windows, service: security }
+detection:
+  sel:
+    registry.path|contains: "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+  condition: sel
+fields: [ host.name, registry.path, registry.value ]
+falsepositives: [ "Legit software autostart" ]
+level: medium

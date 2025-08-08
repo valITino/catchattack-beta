@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -r backend/requirements.txt pytest pytest-cov
-      - run: docker compose -f docker/docker-compose.yml up -d
+      - run: docker compose -f docker/docker-compose.yml up -d db api otel
       - run: |
           for i in {1..30}; do
             if curl -sSf http://localhost:8000/api/v1/healthz >/dev/null; then

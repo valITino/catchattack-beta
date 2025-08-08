@@ -1,0 +1,8 @@
+{
+  "root": true,
+  "env": { "browser": true, "es2021": true },
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint", "react-hooks"],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  "rules": { "no-unused-vars": "warn", "@typescript-eslint/no-explicit-any": "off" }
+}

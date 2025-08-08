@@ -12,6 +12,9 @@ from app.services.tuning.overlays import effective_compile
 from app.services.deploy.elastic import ElasticConnector
 from app.services.deploy.splunk import SplunkConnector
 from app.services.deploy.sentinel import SentinelConnector
+from opentelemetry import trace
+
+tr = trace.get_tracer(__name__)
 
 router = APIRouter(prefix="/deploy", tags=["deploy"])
 
@@ -74,32 +77,34 @@ def deploy_rules(
     db.add(job); db.commit(); db.refresh(job)
 
     # Load & compile per-rule
-    loaded = _load_rules(db, [dict(r, target=target) for r in rules_req])
+    with tr.start_as_current_span("deploy.load_and_compile"):
+        loaded = _load_rules(db, [dict(r, target=target) for r in rules_req])
 
     # Perform deployment
-    details = []
-    for item in loaded:
-        rule = item["rule"]
-        queries = item["queries"]
+    with tr.start_as_current_span("deploy.perform"):
+        details = []
+        for item in loaded:
+            rule = item["rule"]
+            queries = item["queries"]
 
-        if dry_run:
-            res = conn.dry_run(rule.name, queries)
-            details.append({"rule_id": str(rule.id), "status": res.status, "target_ref": None, "error": res.error, "dry_run": True})
-            continue
+            if dry_run:
+                res = conn.dry_run(rule.name, queries)
+                details.append({"rule_id": str(rule.id), "status": res.status, "target_ref": None, "error": res.error, "dry_run": True})
+                continue
 
-        res = conn.upsert_rule(rule.name, queries)
-        dv = models.DeployVersion(
-            job_id=job.id, rule_id=rule.id,
-            target_version_ref=res.target_ref, prev_version_ref=res.prev_ref,
-            status=models.DeployVersionStatus.deployed if res.ok else models.DeployVersionStatus.error,
-            notes=(res.error or None)
-        )
-        db.add(dv); db.flush()
-        details.append({"rule_id": str(rule.id), "status": res.status, "target_ref": res.target_ref, "error": res.error})
+            res = conn.upsert_rule(rule.name, queries)
+            dv = models.DeployVersion(
+                job_id=job.id, rule_id=rule.id,
+                target_version_ref=res.target_ref, prev_version_ref=res.prev_ref,
+                status=models.DeployVersionStatus.deployed if res.ok else models.DeployVersionStatus.error,
+                notes=(res.error or None)
+            )
+            db.add(dv); db.flush()
+            details.append({"rule_id": str(rule.id), "status": res.status, "target_ref": res.target_ref, "error": res.error})
 
-    job.status = models.JobStatus.success if all(d.get("status") in ["success","rolled_back"] for d in details) else models.JobStatus.error
-    job.details = {"items": details, "dry_run": dry_run}
-    db.add(job); db.commit(); db.refresh(job)
+        job.status = models.JobStatus.success if all(d.get("status") in ["success","rolled_back"] for d in details) else models.JobStatus.error
+        job.details = {"items": details, "dry_run": dry_run}
+        db.add(job); db.commit(); db.refresh(job)
 
     return {"job_id": str(job.id), "status": job.status.value, "details": job.details}
 

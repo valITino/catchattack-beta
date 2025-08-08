@@ -1,9 +1,16 @@
-import requests, json, time
+import requests
+import pytest
 
-BASE="http://localhost:8000/api/v1"
-
+BASE = "http://localhost:8000/api/v1"
 def _token():
-    r = requests.post(f"{BASE}/auth/token", data={"username":"admin","password":"adminpass"})
+    try:
+        r = requests.post(
+            f"{BASE}/auth/token",
+            data={"username": "admin", "password": "adminpass"},
+            timeout=2,
+        )
+    except requests.exceptions.ConnectionError:
+        pytest.skip("backend API not reachable on localhost:8000")
     r.raise_for_status()
     return r.json()["access_token"]
 

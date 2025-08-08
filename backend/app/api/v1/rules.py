@@ -4,18 +4,10 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 import yaml
 
-from app.db.session import SessionLocal
-from app.db import models
-from app.db.schemas import RuleCreate, RuleOut
-from app.core.security import require_role
-
-# pySigma imports
-from sigma.collection import SigmaCollection
-from sigma.parser.collection import SigmaCollectionParser
-from sigma.exceptions import SigmaError
-from sigma.backends.elasticsearch import ElasticsearchBackend
-from sigma.backends.splunk import SplunkBackend
-from sigma.backends.sentinel import SentinelBackend
+from ...db.session import SessionLocal
+from ...db import models
+from ...db.schemas import RuleCreate, RuleOut
+from ...core.security import require_role
 
 router = APIRouter(prefix="/rules", tags=["rules"])
 
@@ -116,14 +108,20 @@ def lint_rule(rule_id: UUID, db: Session = Depends(get_db), _user=Depends(requir
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
     try:
-        # pySigma parse
+        from sigma.parser.collection import SigmaCollectionParser
+        from sigma.exceptions import SigmaError
+
         sc = SigmaCollectionParser(rule.sigma_yaml).generate()
-        # if we got here, it's valid
         return {"ok": True, "messages": ["Sigma parsed successfully"], "rules_count": len(sc.rules)}
     except SigmaError as e:
         return {"ok": False, "messages": [str(e)], "rules_count": 0}
 
 def _compile_sigma(yaml_text: str, target: str) -> dict:
+    from sigma.parser.collection import SigmaCollectionParser
+    from sigma.backends.elasticsearch import ElasticsearchBackend
+    from sigma.backends.splunk import SplunkBackend
+    from sigma.backends.sentinel import SentinelBackend
+
     sc = SigmaCollectionParser(yaml_text).generate()
     if target == "elastic":
         backend = ElasticsearchBackend()
@@ -145,5 +143,8 @@ def compile_rule(rule_id: UUID, target: str = Query(..., pattern="^(elastic|splu
     try:
         result = _compile_sigma(rule.sigma_yaml, target)
         return {"ok": True, "target": target, **result}
-    except SigmaError as e:
-        raise HTTPException(status_code=400, detail=f"Compile error: {e}")
+    except Exception as e:
+        from sigma.exceptions import SigmaError
+        if isinstance(e, SigmaError):
+            raise HTTPException(status_code=400, detail=f"Compile error: {e}")
+        raise

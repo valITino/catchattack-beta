@@ -9,24 +9,28 @@ from elasticsearch import helpers
 from app.core.config import settings
 from app.db import models
 from app.services.sigma_eval.engine import evaluate_local, ensure_elastic_index
+from opentelemetry import trace
+
+tr = trace.get_tracer(__name__)
 
 
 def run_evaluate_local(
     db: Session, run: models.AttackRun, events_path: Path, rules: List[models.Rule]
 ) -> List[models.DetectionResult]:
     results = []
-    for rule in rules:
-        hit_count, samples = evaluate_local(rule.sigma_yaml, events_path)
-        dr = models.DetectionResult(
-            run_id=run.id,
-            rule_id=rule.id,
-            hit_count=hit_count,
-            evidence_uri=f"file://{events_path}",
-            sample_events=samples,
-            evaluated_at=datetime.now(timezone.utc),
-        )
-        db.add(dr)
-        results.append(dr)
+    with tr.start_as_current_span("evaluate.local"):
+        for rule in rules:
+            hit_count, samples = evaluate_local(rule.sigma_yaml, events_path)
+            dr = models.DetectionResult(
+                run_id=run.id,
+                rule_id=rule.id,
+                hit_count=hit_count,
+                evidence_uri=f"file://{events_path}",
+                sample_events=samples,
+                evaluated_at=datetime.now(timezone.utc),
+            )
+            db.add(dr)
+            results.append(dr)
     db.flush()
     return results
 
@@ -52,32 +56,33 @@ def run_evaluate_elastic(
     es: Elasticsearch,
 ) -> List[models.DetectionResult]:
     results = []
-    for rule in rules:
-        # Use pySigma backend to produce KQL and wrap in ES DSL query_string
-        from sigma.collection import SigmaCollection
-        from sigma.backends.elasticsearch import ElasticsearchBackend
+    with tr.start_as_current_span("evaluate.elastic"):
+        for rule in rules:
+            # Use pySigma backend to produce KQL and wrap in ES DSL query_string
+            from sigma.collection import SigmaCollection
+            from sigma.backends.elasticsearch import ElasticsearchBackend
 
-        sc = SigmaCollection.from_yaml(rule.sigma_yaml)
-        backend = ElasticsearchBackend()
-        queries = backend.convert(sc)  # list[str]
-        total_hits = 0
-        samples = []
-        for q in queries:
-            # KQL via query_string with "kql" mode isn't a first-class API; use simple query_string for demo
-            resp = es.search(index=index, q=q, size=5)
-            total_hits += resp["hits"]["total"]["value"]
-            for h in resp["hits"]["hits"]:
-                samples.append(h["_source"])
-        dr = models.DetectionResult(
-            run_id=run.id,
-            rule_id=rule.id,
-            hit_count=total_hits,
-            evidence_uri=f"es://{settings.elastic_url}/{index}",
-            sample_events=samples[:5],
-            evaluated_at=datetime.now(timezone.utc),
-        )
-        db.add(dr)
-        results.append(dr)
+            sc = SigmaCollection.from_yaml(rule.sigma_yaml)
+            backend = ElasticsearchBackend()
+            queries = backend.convert(sc)  # list[str]
+            total_hits = 0
+            samples = []
+            for q in queries:
+                # KQL via query_string with "kql" mode isn't a first-class API; use simple query_string for demo
+                resp = es.search(index=index, q=q, size=5)
+                total_hits += resp["hits"]["total"]["value"]
+                for h in resp["hits"]["hits"]:
+                    samples.append(h["_source"])
+            dr = models.DetectionResult(
+                run_id=run.id,
+                rule_id=rule.id,
+                hit_count=total_hits,
+                evidence_uri=f"es://{settings.elastic_url}/{index}",
+                sample_events=samples[:5],
+                evaluated_at=datetime.now(timezone.utc),
+            )
+            db.add(dr)
+            results.append(dr)
     db.flush()
     return results
 

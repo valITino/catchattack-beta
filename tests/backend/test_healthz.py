@@ -16,3 +16,10 @@ def test_healthz():
         r = client.get("/api/v1/healthz")
         assert r.status_code == 200
         assert r.json().get("status") == "ok"
+
+
+def test_readyz():
+    with TestClient(app) as client:
+        r = client.get("/api/v1/readyz")
+        assert r.status_code == 200
+        assert r.json().get("ready") is True

@@ -7,11 +7,14 @@ from importlib import import_module
 from .core.config import settings
 from .api.v1.auth import router as auth_router
 from .api.v1.ai import router as ai_router
+from .core.logging import configure, instrument_fastapi
 
 os.makedirs(settings.artifacts_dir, exist_ok=True)
 os.makedirs(os.path.join(settings.artifacts_dir, "ai_cache"), exist_ok=True)
 
-app = FastAPI(title="catchattack-beta API", version="0.2.0")
+configure()
+app = FastAPI(title="catchattack-beta API", version="0.10.0")
+instrument_fastapi(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,6 +27,10 @@ app.add_middleware(
 @app.get("/api/v1/healthz")
 def healthz():
     return {"status": "ok", "env": settings.env}
+
+@app.get("/api/v1/readyz")
+def readyz():
+    return {"ready": True}
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")

@@ -18,6 +18,14 @@ class Settings(BaseSettings):
         ]
     )
     artifacts_dir: str = "/app/backend/artifacts"
+
+    # AI
+    ai_provider: str = "local"  # "local"|"openai"|"ollama"
+    ai_model: str = "gpt-4o-mini"  # ignored by local
+    ai_timeout_s: int = 45
+    ai_rate_limit_per_min: int = 10
+    openai_api_key: str | None = None
+    ollama_base_url: str = "http://ollama:11434"
     elastic_url: str = "http://elastic:9200"
     elastic_index_prefix: str = "events"
 

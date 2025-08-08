@@ -13,6 +13,7 @@ from .api.v1.tuning import router as tuning_router
 from .api.v1.deploy import router as deploy_router
 
 os.makedirs(settings.artifacts_dir, exist_ok=True)
+os.makedirs(os.path.join(settings.artifacts_dir, "ai_cache"), exist_ok=True)
 
 app = FastAPI(title="catchattack-beta API", version="0.2.0")
 

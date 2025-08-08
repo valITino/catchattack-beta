@@ -25,6 +25,9 @@ dependencies = [
   "jsonpatch>=1.33",
   "ruamel.yaml>=0.18",  # preserves YAML mapping order/comments better than PyYAML
   "tenacity>=8.4",
+  "httpx>=0.27",
+  "orjson>=3.10",
+  "jsonschema>=4.23",
 ]
 
 [tool.ruff]

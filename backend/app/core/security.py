@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Literal
+import uuid
 
 from jose import jwt, JWTError
 from fastapi import HTTPException, status, Depends
@@ -24,18 +25,24 @@ ALGORITHM = "HS256"
 class TokenData(BaseModel):
     sub: str
     role: Literal["admin", "analyst", "viewer"]
+    jti: str
 
 
 def create_access_token(username: str, role: str, expires_minutes: int = 120) -> str:
     expire = datetime.now(tz=timezone.utc) + timedelta(minutes=expires_minutes)
-    to_encode = {"sub": username, "role": role, "exp": expire}
+    to_encode = {
+        "sub": username,
+        "role": role,
+        "exp": expire,
+        "jti": str(uuid.uuid4()),
+    }
     return jwt.encode(to_encode, settings.jwt_secret, algorithm=ALGORITHM)
 
 
 def decode_token(token: str) -> TokenData:
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[ALGORITHM])
-        return TokenData(sub=payload["sub"], role=payload["role"])
+        return TokenData(sub=payload["sub"], role=payload["role"], jti=payload["jti"])
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"

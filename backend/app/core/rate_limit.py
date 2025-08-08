@@ -2,6 +2,8 @@ import time
 from collections import defaultdict, deque
 from typing import Deque, Dict
 
+from .config import settings
+
 class RateLimiter:
     def __init__(self, max_per_min: int = 10):
         self.max = max_per_min
@@ -18,4 +20,4 @@ class RateLimiter:
         q.append(now)
         return True
 
-rl = RateLimiter()
+rl = RateLimiter(settings.ai_rate_limit_per_min)

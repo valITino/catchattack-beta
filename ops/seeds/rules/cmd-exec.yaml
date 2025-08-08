@@ -1,0 +1,10 @@
+title: cmd.exe Execution
+id: 22222222-2222-4222-8222-222222222222
+logsource: { product: windows }
+detection:
+  sel:
+    process.command_line|contains: "cmd.exe"
+  condition: sel
+fields: [ host.name, process.command_line ]
+falsepositives: [ "IT scripts" ]
+level: low

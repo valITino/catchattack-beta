@@ -8,6 +8,11 @@ dev:
 	@echo "API -> http://localhost:8000/docs"
 	@echo "WEB -> http://localhost:3000"
 
+demo:
+	$(COMPOSE) up -d --build
+	$(COMPOSE) exec api bash -lc "alembic upgrade head || true"
+	$(COMPOSE) exec api bash -lc "python ops/demo.py"
+
 down:
 	$(COMPOSE) down -v
 

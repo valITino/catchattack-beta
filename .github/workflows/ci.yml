@@ -40,7 +40,7 @@ jobs:
           pip install ruff mypy
       - name: Lint & type check
         run: |
-          ruff backend
+          ruff check backend
           mypy backend || true
       - name: Alembic migrate
         env:
@@ -74,7 +74,7 @@ jobs:
         working-directory: frontend
         run: |
           npm ci || npm i
-          npm run test -- --coverage
+          npm test
       - name: ESLint
         working-directory: frontend
         run: npx eslint src --max-warnings=0

@@ -8,6 +8,7 @@ from .api.v1.rules import router as rules_router
 from .api.v1.runs import router as runs_router
 from .api.v1.profiles import router as profiles_router
 from .api.v1.coverage import router as coverage_router
+from .api.v1.priorities import router as priorities_router
 
 os.makedirs(settings.artifacts_dir, exist_ok=True)
 
@@ -30,3 +31,4 @@ app.include_router(rules_router, prefix="/api/v1")
 app.include_router(runs_router, prefix="/api/v1")
 app.include_router(profiles_router, prefix="/api/v1")
 app.include_router(coverage_router, prefix="/api/v1")
+app.include_router(priorities_router, prefix="/api/v1")

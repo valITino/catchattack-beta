@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: catchattack
+        ports: [ "5432:5432" ]
+        options: >-
+          --health-cmd="pg_isready -U postgres" 
+          --health-interval=5s --health-timeout=5s --health-retries=10
+      elastic:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: "false"
+        ports: [ "9200:9200" ]
+        options: >-
+          --health-cmd="curl -s http://localhost:9200 >/dev/null || exit 1"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install backend
+        run: |
+          pip install -U pip
+          pip install -e backend
+          pip install ruff mypy
+      - name: Lint & type check
+        run: |
+          ruff backend
+          mypy backend || true
+      - name: Alembic migrate
+        env:
+          DB_DSN: postgresql+psycopg://postgres:postgres@localhost:5432/catchattack
+        run: |
+          cd backend
+          alembic upgrade head
+      - name: Run API (background)
+        env:
+          DB_DSN: postgresql+psycopg://postgres:postgres@localhost:5432/catchattack
+          ELASTIC_URL: http://localhost:9200
+        run: |
+          nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 & sleep 3
+      - name: Backend tests
+        run: |
+          pytest -q
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/.coverage
+          if-no-files-found: ignore
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Install & test
+        working-directory: frontend
+        run: |
+          npm ci || npm i
+          npm run test -- --coverage
+      - name: ESLint
+        working-directory: frontend
+        run: npx eslint src --max-warnings=0
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build images
+        run: |
+          docker build -f docker/Dockerfile.api -t ghcr.io/${{ github.repository }}/api:${{ github.sha }} .
+          docker build -f docker/Dockerfile.web -t ghcr.io/${{ github.repository }}/web:${{ github.sha }} .
+      - name: Save images
+        run: |
+          docker save ghcr.io/${{ github.repository }}/api:${{ github.sha }} | gzip > api-image.tar.gz
+          docker save ghcr.io/${{ github.repository }}/web:${{ github.sha }} | gzip > web-image.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: images
+          path: |
+            api-image.tar.gz
+            web-image.tar.gz

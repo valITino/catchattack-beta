@@ -20,6 +20,8 @@ dependencies = [
   "pysigma-backend-splunk>=1.1",
   "pysigma-backend-sentinel>=1.0",
   "PyYAML>=6.0",
+  "ujson>=5.10",
+  "elasticsearch>=8.13",
 ]
 
 [tool.ruff]

@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 from .core.config import settings
 from .api.v1.auth import router as auth_router
 from .api.v1.rules import router as rules_router
+
+os.makedirs(settings.artifacts_dir, exist_ok=True)
 
 app = FastAPI(title="catchattack-beta API", version="0.2.0")
 

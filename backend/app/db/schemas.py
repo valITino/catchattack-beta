@@ -35,3 +35,35 @@ class RuleOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ThreatProfilePayload(BaseModel):
+    organization: str = Field(..., examples=["ACME Corp"])
+    industry: Optional[str] = Field(None, examples=["finance"])
+    tech_stack: List[str] = Field(default_factory=list, examples=[["windows", "linux"]])
+    intel_tags: List[str] = Field(default_factory=list, examples=[["ransomware"]])
+    weights: Optional[dict] = Field(None, examples=[{"T1059": 1.5}])
+
+
+class ThreatProfileOut(ThreatProfilePayload):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CoverageItem(BaseModel):
+    technique_id: str
+    rules_count: int
+    validated_count: int
+    rule_ids: List[str]
+
+
+class PriorityItem(BaseModel):
+    technique_id: str
+    rules_count: int
+    validated_count: int
+    validated_ratio: float
+    priority_score: float

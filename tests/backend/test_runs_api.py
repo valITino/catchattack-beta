@@ -1,6 +1,15 @@
-import requests, json, uuid
+import json
+import uuid
 
-BASE="http://localhost:8000/api/v1"
+import pytest
+import requests
+
+BASE = "http://localhost:8000/api/v1"
+
+try:
+    requests.get(BASE, timeout=1)
+except requests.RequestException:
+    pytest.skip("backend server not running", allow_module_level=True)
 
 def token(role="analyst"):
     r = requests.post(f"{BASE}/auth/token", data={"username":role, "password":f"{role}pass"})

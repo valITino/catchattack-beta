@@ -22,6 +22,8 @@ dependencies = [
   "PyYAML>=6.0",
   "ujson>=5.10",
   "elasticsearch>=8.13",
+  "jsonpatch>=1.33",
+  "ruamel.yaml>=0.18",  # preserves YAML mapping order/comments better than PyYAML
 ]
 
 [tool.ruff]

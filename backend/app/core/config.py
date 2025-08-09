@@ -18,6 +18,8 @@ class Settings(BaseSettings):
         ]
     )
     artifacts_dir: str = "/app/backend/artifacts"
+    feature_atomic: bool = True
+    feature_caldera: bool = False
 
     # AI
     ai_provider: str = "local"  # "local"|"openai"|"ollama"

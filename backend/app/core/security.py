@@ -1,21 +1,17 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Literal
+from typing import Literal
 import uuid
 
 from jose import jwt, JWTError
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from passlib.hash import bcrypt
 
 from .config import settings
-
-
-def _load_users() -> dict:
-    users: dict[str, dict[str, str]] = {}
-    raw = getattr(settings, "users", [])
-    for item in raw:
-        users[item["username"]] = item
-    return users
+from app.db.session import SessionLocal
+from app.db import models
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -44,9 +40,7 @@ def decode_token(token: str) -> TokenData:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[ALGORITHM])
         return TokenData(sub=payload["sub"], role=payload["role"], jti=payload["jti"])
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
@@ -62,12 +56,18 @@ def require_role(*allowed_roles: str):
     return checker
 
 
-USERS = _load_users()
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-def verify_user_password(username: str, password: str) -> Optional[dict]:
-    user = USERS.get(username)
-    if not user:
+def verify_user_password_db(db: Session, username: str, password: str):
+    u = db.query(models.User).filter(models.User.username == username).one_or_none()
+    if not u:
         return None
-    return user if user["password"] == password else None
-
+    if not bcrypt.verify(password, u.password_hash):
+        return None
+    return {"username": u.username, "role": u.role}

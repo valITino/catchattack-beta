@@ -1,10 +1,23 @@
 from sqlalchemy.orm import declarative_base, relationship, Mapped, mapped_column
-from sqlalchemy import String, Text, Enum, ForeignKey, Integer, DateTime, JSON, UniqueConstraint, Index, ARRAY, func
+from sqlalchemy import (
+    String,
+    Text,
+    Enum,
+    ForeignKey,
+    Integer,
+    DateTime,
+    JSON,
+    UniqueConstraint,
+    Index,
+    ARRAY,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 import enum
 import uuid
 
 Base = declarative_base()
+
 
 # --- Enums ---
 class RuleStatus(str, enum.Enum):
@@ -49,11 +62,23 @@ class DeployVersionStatus(str, enum.Enum):
 
 # --- Mixins ---
 class TimestampMixin:
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 # --- Tables ---
+class User(Base, TimestampMixin):
+    __tablename__ = "users"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(200), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)  # admin|analyst|viewer
+
+
 class Rule(Base, TimestampMixin):
     __tablename__ = "rules"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -61,10 +86,16 @@ class Rule(Base, TimestampMixin):
     description: Mapped[str | None] = mapped_column(Text)
     attack_techniques: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=[])
     sigma_yaml: Mapped[str] = mapped_column(Text, nullable=False)
-    status: Mapped[RuleStatus] = mapped_column(Enum(RuleStatus, name="rule_status"), default=RuleStatus.draft, nullable=False)
+    status: Mapped[RuleStatus] = mapped_column(
+        Enum(RuleStatus, name="rule_status"), default=RuleStatus.draft, nullable=False
+    )
 
-    customizations = relationship("Customization", back_populates="rule", cascade="all,delete-orphan")
-    validation = relationship("ValidationStatus", uselist=False, back_populates="rule", cascade="all,delete-orphan")
+    customizations = relationship(
+        "Customization", back_populates="rule", cascade="all,delete-orphan"
+    )
+    validation = relationship(
+        "ValidationStatus", uselist=False, back_populates="rule", cascade="all,delete-orphan"
+    )
 
     __table_args__ = (
         Index("ix_rules_techniques_gin", "attack_techniques", postgresql_using="gin"),
@@ -74,7 +105,9 @@ class Rule(Base, TimestampMixin):
 class Customization(Base, TimestampMixin):
     __tablename__ = "customizations"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    rule_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("rules.id", ondelete="CASCADE"), nullable=False)
+    rule_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("rules.id", ondelete="CASCADE"), nullable=False
+    )
     owner: Mapped[str] = mapped_column(String(255), nullable=False)
     overlays: Mapped[dict] = mapped_column(JSON, nullable=False)  # RFC6902 JSON Patch array
     notes: Mapped[str | None] = mapped_column(Text)
@@ -89,7 +122,9 @@ class AttackRun(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     techniques: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=[])
     source: Mapped[RunSource] = mapped_column(Enum(RunSource, name="run_source"), nullable=False)
-    status: Mapped[RunStatus] = mapped_column(Enum(RunStatus, name="run_status"), default=RunStatus.created, nullable=False)
+    status: Mapped[RunStatus] = mapped_column(
+        Enum(RunStatus, name="run_status"), default=RunStatus.created, nullable=False
+    )
     started_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
     ended_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
     environment: Mapped[dict | None] = mapped_column(JSON)
@@ -102,12 +137,18 @@ class AttackRun(Base, TimestampMixin):
 class DetectionResult(Base, TimestampMixin):
     __tablename__ = "detection_results"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("attack_runs.id", ondelete="CASCADE"), nullable=False)
-    rule_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("rules.id", ondelete="CASCADE"), nullable=False)
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("attack_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    rule_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("rules.id", ondelete="CASCADE"), nullable=False
+    )
     hit_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     evidence_uri: Mapped[str | None] = mapped_column(Text)
     sample_events: Mapped[list[dict] | None] = mapped_column(ARRAY(JSON))
-    evaluated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    evaluated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     run = relationship("AttackRun", back_populates="results")
     rule = relationship("Rule")
@@ -121,8 +162,12 @@ class DetectionResult(Base, TimestampMixin):
 
 class ValidationStatus(Base, TimestampMixin):
     __tablename__ = "validation_status"
-    rule_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("rules.id", ondelete="CASCADE"), primary_key=True)
-    last_run_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("attack_runs.id", ondelete="SET NULL"))
+    rule_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("rules.id", ondelete="CASCADE"), primary_key=True
+    )
+    last_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("attack_runs.id", ondelete="SET NULL")
+    )
     tp: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     fp: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     fn: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -137,9 +182,13 @@ class ValidationStatus(Base, TimestampMixin):
 class DeployJob(Base, TimestampMixin):
     __tablename__ = "deploy_jobs"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    target: Mapped[DeployTarget] = mapped_column(Enum(DeployTarget, name="deploy_target"), nullable=False)
+    target: Mapped[DeployTarget] = mapped_column(
+        Enum(DeployTarget, name="deploy_target"), nullable=False
+    )
     submitted_by: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[JobStatus] = mapped_column(Enum(JobStatus, name="job_status"), default=JobStatus.pending, nullable=False)
+    status: Mapped[JobStatus] = mapped_column(
+        Enum(JobStatus, name="job_status"), default=JobStatus.pending, nullable=False
+    )
     details: Mapped[dict | None] = mapped_column(JSON)
 
     versions = relationship("DeployVersion", back_populates="job", cascade="all,delete-orphan")
@@ -149,11 +198,19 @@ class DeployJob(Base, TimestampMixin):
 class DeployVersion(Base, TimestampMixin):
     __tablename__ = "deploy_versions"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("deploy_jobs.id", ondelete="CASCADE"), nullable=False)
-    rule_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("rules.id", ondelete="CASCADE"), nullable=False)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("deploy_jobs.id", ondelete="CASCADE"), nullable=False
+    )
+    rule_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("rules.id", ondelete="CASCADE"), nullable=False
+    )
     target_version_ref: Mapped[str | None] = mapped_column(String(512))
     prev_version_ref: Mapped[str | None] = mapped_column(String(512))
-    status: Mapped[DeployVersionStatus] = mapped_column(Enum(DeployVersionStatus, name="deploy_version_status"), default=DeployVersionStatus.deployed, nullable=False)
+    status: Mapped[DeployVersionStatus] = mapped_column(
+        Enum(DeployVersionStatus, name="deploy_version_status"),
+        default=DeployVersionStatus.deployed,
+        nullable=False,
+    )
     notes: Mapped[str | None] = mapped_column(Text)
 
     job = relationship("DeployJob", back_populates="versions")
@@ -171,4 +228,3 @@ class ThreatProfile(Base, TimestampMixin):
     weights: Mapped[dict | None] = mapped_column(JSON)
 
     __table_args__ = (Index("ix_threat_profile_org", "organization"),)
-

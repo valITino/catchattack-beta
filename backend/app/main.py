@@ -24,13 +24,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/api/v1/healthz")
 def healthz():
     return {"status": "ok", "env": settings.env}
 
+
 @app.get("/api/v1/readyz")
 def readyz():
     return {"ready": True}
+
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
@@ -52,3 +55,7 @@ for mod_path in OPTIONAL:
         app.include_router(router, prefix="/api/v1")
     except Exception as e:  # pragma: no cover - optional deps
         logging.warning("Router %s not loaded: %s", mod_path, e)
+
+from .services.validation.scheduler import start_scheduler  # noqa: E402
+
+_scheduler = start_scheduler()

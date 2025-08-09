@@ -5,6 +5,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    Boolean,
     DateTime,
     JSON,
     UniqueConstraint,
@@ -233,3 +234,23 @@ class ThreatProfile(Base, TimestampMixin):
     weights: Mapped[dict | None] = mapped_column(JSON)
 
     __table_args__ = (Index("ix_threat_profile_org", "organization"),)
+
+
+class ValidationSchedule(Base, TimestampMixin):
+    __tablename__ = "validation_schedules"
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    cron: Mapped[str] = mapped_column(String(255), nullable=False, default="0 2 * * *")
+    dataset_uri: Mapped[str] = mapped_column(String(512), nullable=False)
+    engine: Mapped[str] = mapped_column(String(50), nullable=False, default="local")
+    techniques: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=[])
+    rule_ids: Mapped[list[uuid.UUID] | None] = mapped_column(
+        ARRAY(UUID(as_uuid=True))
+    )
+    auto_index: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_run_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (Index("ix_validation_schedules_enabled", "enabled"),)

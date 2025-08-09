@@ -7,12 +7,14 @@ import RuleDetail from "./pages/RuleDetail";
 import Runs from "./pages/Runs";
 import Deploy from "./pages/Deploy";
 import AIWorkbench from "./pages/AIWorkbench";
+import Library from "./pages/Library";
 
 function Router(){
   const hash = window.location.hash.slice(2); // e.g. /rules or /rule/<id>
   if(hash.startsWith("coverage")) return <Coverage/>;
   if(hash.startsWith("rules")) return <Rules/>;
   if(hash.startsWith("rule/")) return <RuleDetail id={hash.split("/")[1]}/>;
+  if(hash.startsWith("library")) return <Library/>;
   if(hash.startsWith("runs")) return <Runs/>;
   if(hash.startsWith("deploy")) return <Deploy/>;
   if(hash.startsWith("ai")) return <AIWorkbench/>;
@@ -30,7 +32,7 @@ function App(){
   return (
     <div>
       <nav className="p-3 flex gap-3 bg-gray-100">
-        <a href="#/">Dashboard</a><a href="#/coverage">Coverage</a><a href="#/rules">Rules</a>
+        <a href="#/">Dashboard</a><a href="#/coverage">Coverage</a><a href="#/rules">Rules</a><a href="#/library">Library</a>
         <a href="#/runs">Runs</a><a href="#/deploy">Deploy</a><a href="#/ai">AI</a>
         <span className="ml-auto">
           <button className="px-2 py-1 border rounded" onClick={()=>doLogin("analyst")}>Login Analyst</button>

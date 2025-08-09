@@ -7,7 +7,7 @@ from elasticsearch import helpers
 
 from app.core.config import settings
 from app.db import models
-from app.services.sigma_eval.engine import evaluate_local
+from app.services.sigma_eval.engine import evaluate_local, ensure_elastic_index  # noqa: F401
 from app.services.validation.confidence import compute_confidence
 from opentelemetry import trace
 

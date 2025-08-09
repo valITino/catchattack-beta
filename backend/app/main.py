@@ -10,6 +10,7 @@ from .api.v1.ai import router as ai_router
 from .api.v1.schedules import router as schedules_router
 from .api.v1.health import router as rule_health_router
 from .api.v1.imports import router as imports_router
+from .api.v1.search import router as search_router
 from .core.logging import configure, instrument_fastapi
 
 os.makedirs(settings.artifacts_dir, exist_ok=True)
@@ -40,6 +41,7 @@ app.include_router(ai_router, prefix="/api/v1")
 app.include_router(schedules_router, prefix="/api/v1")
 app.include_router(rule_health_router, prefix="/api/v1")
 app.include_router(imports_router, prefix="/api/v1")
+app.include_router(search_router, prefix="/api/v1")
 
 OPTIONAL = [
     "app.api.v1.rules",

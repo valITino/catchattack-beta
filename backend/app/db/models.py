@@ -13,7 +13,7 @@ from sqlalchemy import (
     ARRAY,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 import enum
 import uuid
 
@@ -90,6 +90,12 @@ class Rule(Base, TimestampMixin):
     status: Mapped[RuleStatus] = mapped_column(
         Enum(RuleStatus, name="rule_status"), default=RuleStatus.draft, nullable=False
     )
+    provenance: Mapped[dict | None] = mapped_column(
+        JSONB, nullable=True
+    )  # {source, uri, author, imported_at}
+    logic_hash: Mapped[str | None] = mapped_column(
+        String(64), index=True
+    )  # sha256 of normalized YAML
 
     customizations = relationship(
         "Customization", back_populates="rule", cascade="all,delete-orphan"
@@ -238,19 +244,27 @@ class ThreatProfile(Base, TimestampMixin):
 
 class ValidationSchedule(Base, TimestampMixin):
     __tablename__ = "validation_schedules"
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     cron: Mapped[str] = mapped_column(String(255), nullable=False, default="0 2 * * *")
     dataset_uri: Mapped[str] = mapped_column(String(512), nullable=False)
     engine: Mapped[str] = mapped_column(String(50), nullable=False, default="local")
     techniques: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=[])
-    rule_ids: Mapped[list[uuid.UUID] | None] = mapped_column(
-        ARRAY(UUID(as_uuid=True))
-    )
+    rule_ids: Mapped[list[uuid.UUID] | None] = mapped_column(ARRAY(UUID(as_uuid=True)))
     auto_index: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     last_run_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (Index("ix_validation_schedules_enabled", "enabled"),)
+
+
+class ImportLog(Base, TimestampMixin):
+    __tablename__ = "import_logs"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source: Mapped[str] = mapped_column(String(128), nullable=False)  # e.g., "folder", "url"
+    uri: Mapped[str] = mapped_column(String(1024), nullable=False)
+    total: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    inserted: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    deduped: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    errors: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    details: Mapped[dict | None] = mapped_column(JSONB)  # optional per-file info

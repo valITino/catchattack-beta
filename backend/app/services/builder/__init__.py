@@ -1,7 +1,6 @@
-from typing import get_args
-
 from .compile import compile_sigma_from_draft
-from .models import RuleDraft, Operator
+from .models import RuleDraft
+from .catalog import operator_catalog
 
 
 def compile_rule(draft: RuleDraft) -> str:
@@ -9,7 +8,3 @@ def compile_rule(draft: RuleDraft) -> str:
     if not draft.predicates:
         raise ValueError("predicates[] required")
     return compile_sigma_from_draft(draft)
-
-
-def operator_catalog() -> list[str]:
-    return list(get_args(Operator))

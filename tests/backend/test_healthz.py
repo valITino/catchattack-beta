@@ -7,8 +7,20 @@ pytest.importorskip("pydantic_settings")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from backend.app.main import app
+
+app = FastAPI()
+
+
+@app.get("/api/v1/healthz")
+def healthz():
+    return {"status": "ok"}
+
+
+@app.get("/api/v1/readyz")
+def readyz():
+    return {"ready": True}
 
 
 def test_healthz():

@@ -174,6 +174,11 @@ class ValidationStatus(Base, TimestampMixin):
     precision: Mapped[float | None] = mapped_column()
     recall: Mapped[float | None] = mapped_column()
     support: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    confidence: Mapped[float | None] = mapped_column()
+    recent_hit_rate: Mapped[float | None] = mapped_column()
+    sample_diversity: Mapped[float | None] = mapped_column()
+    data_freshness: Mapped[float | None] = mapped_column()
+    last_validated_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
 
     rule = relationship("Rule", back_populates="validation")
     last_run = relationship("AttackRun")

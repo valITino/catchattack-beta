@@ -1,14 +1,14 @@
-from typing import List, Tuple
+from typing import List
 from pathlib import Path
 from datetime import datetime, timezone
-from uuid import UUID
 from sqlalchemy.orm import Session
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
 
 from app.core.config import settings
 from app.db import models
-from app.services.sigma_eval.engine import evaluate_local, ensure_elastic_index
+from app.services.sigma_eval.engine import evaluate_local
+from app.services.validation.confidence import compute_confidence
 from opentelemetry import trace
 
 tr = trace.get_tracer(__name__)
@@ -90,7 +90,10 @@ def run_evaluate_elastic(
 def update_validation_status(
     db: Session, run: models.AttackRun, results: List[models.DetectionResult]
 ):
-    # MVP: mark TP as hit_count, leave FP/FN 0; compute precision/recall as None unless you later label truth.
+    total_events = 0
+    for dr in results:
+        total_events += max(dr.hit_count, 1)
+
     for dr in results:
         vs = db.get(models.ValidationStatus, dr.rule_id)
         if not vs:
@@ -100,6 +103,18 @@ def update_validation_status(
         vs.support = (vs.support or 0) + dr.hit_count
         vs.precision = None
         vs.recall = None
+
+        c = compute_confidence(
+            hits=dr.hit_count,
+            total_events=total_events,
+            sample_events=dr.sample_events or [],
+            last_eval=run.ended_at or run.started_at,
+        )
+        vs.confidence = c["confidence"]
+        vs.recent_hit_rate = c["recent_hit_rate"]
+        vs.sample_diversity = c["sample_diversity"]
+        vs.data_freshness = c["data_freshness"]
+        vs.last_validated_at = run.ended_at or run.started_at
+
         db.add(vs)
     db.commit()
-

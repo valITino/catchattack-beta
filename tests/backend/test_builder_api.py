@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from fastapi import FastAPI
@@ -69,3 +70,31 @@ def test_compile_rule_draft_all():
     assert sel["a|equals"] == 1
     assert sel["b|gt"] == 2
     assert data["detection"]["condition"] == "sel"
+
+
+def test_preview_rule_inline_events():
+    rule = {
+        "title": "Preview Rule",
+        "logsource": {"product": "linux"},
+        "predicates": [
+            {"field": "proc.name", "op": "equals", "value": "cmd.exe"},
+            {"field": "proc.cmd", "op": "contains", "value": "/c"},
+        ],
+        "combine": "all",
+    }
+    events = [
+        {"proc": {"name": "cmd.exe", "cmd": "do /c thing"}},
+        {"proc": {"name": "bash", "cmd": "-x"}},
+    ]
+    with TestClient(app) as client:
+        hdr = auth_header("analyst")
+        r = client.post(
+            "/api/v1/builder/preview",
+            headers=hdr,
+            json={"rule": rule, "inline_events": events},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["hits"] == 1
+        assert len(body["samples"]) == 1
+        assert "sigma_yaml" in body

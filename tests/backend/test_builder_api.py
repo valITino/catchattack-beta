@@ -91,7 +91,7 @@ def test_preview_rule_inline_events():
         r = client.post(
             "/api/v1/builder/preview",
             headers=hdr,
-            json={"rule": rule, "inline_events": events},
+            json={"draft": rule, "inline_events": events},
         )
         assert r.status_code == 200
         body = r.json()

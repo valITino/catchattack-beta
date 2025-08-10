@@ -8,7 +8,9 @@ import Runs from "./pages/Runs";
 import Deploy from "./pages/Deploy";
 import AIWorkbench from "./pages/AIWorkbench";
 import Library from "./pages/Library";
+import Builder from "./pages/Builder";
 
+// eslint-disable-next-line react-refresh/only-export-components
 function Router(){
   const hash = window.location.hash.slice(2); // e.g. /rules or /rule/<id>
   if(hash.startsWith("coverage")) return <Coverage/>;
@@ -18,9 +20,11 @@ function Router(){
   if(hash.startsWith("runs")) return <Runs/>;
   if(hash.startsWith("deploy")) return <Deploy/>;
   if(hash.startsWith("ai")) return <AIWorkbench/>;
+  if(hash.startsWith("builder")) return <Builder/>;
   return <Dashboard/>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 function App(){
   const [tok,setTok]=React.useState(localStorage.getItem("catchattack.token")||"");
   async function doLogin(role:"admin"|"analyst"|"viewer"){
@@ -34,6 +38,7 @@ function App(){
       <nav className="p-3 flex gap-3 bg-gray-100">
         <a href="#/">Dashboard</a><a href="#/coverage">Coverage</a><a href="#/rules">Rules</a><a href="#/library">Library</a>
         <a href="#/runs">Runs</a><a href="#/deploy">Deploy</a><a href="#/ai">AI</a>
+        <a href="#/builder">Builder</a>
         <span className="ml-auto">
           <button className="px-2 py-1 border rounded" onClick={()=>doLogin("analyst")}>Login Analyst</button>
           <button className="px-2 py-1 border rounded ml-2" onClick={()=>doLogin("admin")}>Login Admin</button>

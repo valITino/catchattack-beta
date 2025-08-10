@@ -51,15 +51,21 @@ def evaluate_local(
 ) -> Tuple[int, List[Dict[str, Any]]]:
     """
     Super-simplified evaluator:
-    - Only supports a single 'sel' and condition: sel
+    - Supports a single selection referenced directly in the condition
+      (e.g., ``sel`` or ``sel0``)
     - With field ops: contains/startswith/endswith/equals/re via Sigma pipe ops mapping
     """
     data = yaml.safe_load(sigma_yaml)
     det = data.get("detection", {})
-    if "condition" not in det or "sel" not in det:
+    cond = det.get("condition")
+    if not isinstance(cond, str):
+        return 0, []
+
+    sel_name = cond.strip()
+    sel = det.get(sel_name)
+    if not isinstance(sel, dict):
         # non-supported structure
         return 0, []
-    sel = det["sel"]  # dict of { "field|op": value }
     tests: List[Tuple[str, str, str]] = []
     for k, v in sel.items():
         if "|" in k:

@@ -98,3 +98,23 @@ def test_preview_rule_inline_events():
         assert body["hits"] == 1
         assert len(body["samples"]) == 1
         assert "sigma_yaml" in body
+
+
+def test_builder_schema():
+    dataset_path = (
+        Path(__file__).resolve().parents[2] / "ops/seeds/telemetry/windows.ndjson"
+    )
+    uri = f"file://{dataset_path}"
+    with TestClient(app) as client:
+        hdr = auth_header("viewer")
+        r = client.post(
+            "/api/v1/builder/schema", headers=hdr, json={"dataset_uri": uri}
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["dataset"] == str(dataset_path)
+        fields = {f["field"]: f for f in body["fields"]}
+        assert "@timestamp" in fields
+        ts_field = fields["@timestamp"]
+        assert "date" in ts_field["types"]
+        assert "equals" in ts_field["suggested_ops"]

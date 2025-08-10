@@ -63,6 +63,37 @@ export function withAuth(token: string) {
       if (customizationId) url.searchParams.set("customization_id", customizationId);
       return fetch(url.toString(), { method: "POST", headers }).then(j);
     },
+    builderOperators() {
+      return fetch(`${API_BASE}/api/v1/builder/operators`, { headers }).then(j);
+    },
+    builderSchema(dataset_uri: string, limit_events = 100, samples_per_field = 5) {
+      return fetch(`${API_BASE}/api/v1/builder/schema`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ dataset_uri, limit_events, samples_per_field }),
+      }).then(j);
+    },
+    builderCompile(draft: any) {
+      return fetch(`${API_BASE}/api/v1/builder/compile`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(draft),
+      }).then(j);
+    },
+    builderPreview(draft: any, dataset_uri: string, sample_limit = 5) {
+      return fetch(`${API_BASE}/api/v1/builder/preview`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ draft, dataset_uri, sample_limit }),
+      }).then(j);
+    },
+    saveRule(body: any) {
+      return fetch(`${API_BASE}/api/v1/rules`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      }).then(j);
+    },
     createRun(name: string, source: "local" | "atomic" | "caldera") {
       const form = new FormData();
       form.set("name", name);

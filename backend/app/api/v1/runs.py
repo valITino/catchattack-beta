@@ -4,7 +4,16 @@ from uuid import UUID, uuid4
 from pathlib import Path
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from elasticsearch import Elasticsearch
+
+# Elasticsearch is an optional dependency.  Import errors are swallowed so
+# that the API module can still be imported on systems without the
+# ``elasticsearch`` package.  When auto indexing is requested, the handler
+# will check for ``Elasticsearch`` availability and return an error if
+# necessary.
+try:
+    from elasticsearch import Elasticsearch  # type: ignore[import]
+except Exception:
+    Elasticsearch = None  # type: ignore[assignment]
 
 from app.db.session import SessionLocal
 from app.db import models
@@ -79,7 +88,10 @@ async def ingest_run_data(
     indexed = 0
     index_name = None
     if auto_index:
-        es = Elasticsearch(settings.elastic_url)
+        # Ensure Elasticsearch client is available
+        if Elasticsearch is None:
+            raise HTTPException(503, "Elasticsearch client not available; cannot auto-index events")
+        es = Elasticsearch(settings.elastic_url)  # type: ignore[call-arg]
         index_name = f"{settings.elastic_index_prefix}-{run_id}"
         ensure_elastic_index(es, index_name)
         indexed = bulk_index_events(es, index_name, dest)
@@ -115,7 +127,15 @@ def evaluate_run(
     if engine == "local":
         results = run_evaluate_local(db, run, events_path, rules)
     else:
-        from elasticsearch import Elasticsearch
+        # Evaluate using an Elastic backend.  The Elastic client is optional, so
+        # lazily import and provide a helpful error if it's unavailable.
+        try:
+            from elasticsearch import Elasticsearch  # type: ignore[import]
+        except Exception:
+            raise HTTPException(
+                503,
+                "Elasticsearch client library is not available; install the 'elasticsearch' package or disable Elastic engine"
+            )
         es = Elasticsearch(settings.elastic_url)
         index_name = f"{settings.elastic_index_prefix}-{run_id}"
         ensure_elastic_index(es, index_name)

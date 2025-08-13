@@ -2,8 +2,14 @@ from typing import List
 from pathlib import Path
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from elasticsearch import Elasticsearch
-from elasticsearch import helpers
+
+# Attempt to import the Elasticsearch client and helpers.  If unavailable
+# (e.g., the 'elasticsearch' package is not installed), set them to ``None``.
+try:
+    from elasticsearch import Elasticsearch, helpers  # type: ignore[import]
+except Exception:
+    Elasticsearch = None  # type: ignore[assignment]
+    helpers = None  # type: ignore[assignment]
 
 from app.core.config import settings
 from app.db import models
@@ -35,7 +41,16 @@ def run_evaluate_local(
     return results
 
 
-def bulk_index_events(es: Elasticsearch, index: str, events_path: Path) -> int:
+def bulk_index_events(es: "Elasticsearch", index: str, events_path: Path) -> int:
+    """Index events into ElasticSearch in bulk.
+
+    If the ``helpers`` module is not available, a ``RuntimeError`` is raised.
+    """
+    if helpers is None:
+        raise RuntimeError(
+            "Elasticsearch helpers are unavailable; install the 'elasticsearch' package to index events."
+        )
+
     def gen():
         with events_path.open("r", encoding="utf-8") as f:
             for line in f:
@@ -58,15 +73,22 @@ def run_evaluate_elastic(
     results = []
     with tr.start_as_current_span("evaluate.elastic"):
         for rule in rules:
-            # Use pySigma backend to produce KQL and wrap in ES DSL query_string
-            from sigma.collection import SigmaCollection
-            from sigma.backends.elasticsearch import ElasticsearchBackend
+            # Use pySigma backend to produce queries for Elasticsearch.  Import
+            # the necessary modules lazily so that missing optional dependencies
+            # can be detected and reported cleanly.
+            try:
+                from sigma.collection import SigmaCollection  # type: ignore[import]
+                from sigma.backends.elasticsearch import ElasticsearchBackend  # type: ignore[import]
+            except Exception:
+                raise RuntimeError(
+                    "Sigma Elasticsearch backend is unavailable; install the 'pysigma-backend-elasticsearch' package to use Elastic evaluation."
+                )
 
             sc = SigmaCollection.from_yaml(rule.sigma_yaml)
             backend = ElasticsearchBackend()
             queries = backend.convert(sc)  # list[str]
             total_hits = 0
-            samples = []
+            samples: list[dict] = []
             for q in queries:
                 # KQL via query_string with "kql" mode isn't a first-class API; use simple query_string for demo
                 resp = es.search(index=index, q=q, size=5)

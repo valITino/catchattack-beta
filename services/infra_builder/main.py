@@ -7,7 +7,13 @@ import os
 from pathlib import Path
 from typing import Any
 
-from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
+# ``aiokafka`` is optional; defer import until runtime.  If the dependency
+# isn't available, the service will emit a clear error message.
+try:
+    from aiokafka import AIOKafkaConsumer, AIOKafkaProducer  # type: ignore[import]
+except Exception:
+    AIOKafkaConsumer = None  # type: ignore[assignment]
+    AIOKafkaProducer = None  # type: ignore[assignment]
 from fastavro import schemaless_reader
 from jinja2 import Environment, FileSystemLoader
 
@@ -25,6 +31,10 @@ def _render_vm(hostname: str, cpu: float, mem: float, disk: float) -> str:
     return tpl.render(name=hostname, cpu=cpu, mem=mem, disk=disk)
 
 async def main() -> None:
+    if AIOKafkaConsumer is None or AIOKafkaProducer is None:
+        raise RuntimeError(
+            "aiokafka library is not available; install 'aiokafka' to run the infra builder service."
+        )
     bootstrap = os.getenv("KAFKA_BOOTSTRAP")
     if not bootstrap:
         raise RuntimeError("KAFKA_BOOTSTRAP is not set")

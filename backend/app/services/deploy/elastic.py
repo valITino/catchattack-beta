@@ -1,5 +1,15 @@
 from typing import List, Optional, Dict, Any
-from elasticsearch import Elasticsearch  # type: ignore[import]
+
+# The Elasticsearch client is optional.  Import errors are swallowed so that
+# the module can still be imported on systems without the ``elasticsearch``
+# package.  When unavailable, ``Elasticsearch`` will be set to ``None``
+# and attempts to use this connector should raise a helpful error at
+# runtime.
+try:
+    from elasticsearch import Elasticsearch  # type: ignore[import]
+except Exception:
+    Elasticsearch = None  # type: ignore[assignment]
+
 from .base import DeployConnector, DeployResult
 
 INDEX = ".catchattack-rules"   # local index to store KQL snippets as "deployed object" for demo
@@ -8,7 +18,17 @@ INDEX = ".catchattack-rules"   # local index to store KQL snippets as "deployed 
 class ElasticConnector(DeployConnector):
     target_name = "elastic"
 
-    def __init__(self, es: Elasticsearch):
+    def __init__(self, es: "Elasticsearch"):
+        """Create a connector using an Elasticsearch client.
+
+        If the ``elasticsearch`` library is not installed, instantiating
+        ``ElasticConnector`` will raise a ``RuntimeError`` to indicate that
+        deployments to Elastic are not possible in this environment.
+        """
+        if Elasticsearch is None:
+            raise RuntimeError(
+                "Elasticsearch client library is not available; install the 'elasticsearch' package to use Elastic deployment."
+            )
         self.es = es
         # Ensure store index
         if not self.es.indices.exists(index=INDEX):

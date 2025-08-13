@@ -2,7 +2,15 @@ from typing import Iterable, Dict, Any, List, Tuple
 import ujson as json
 from pathlib import Path
 import yaml
-from elasticsearch import Elasticsearch, helpers
+# Attempt to import the Elasticsearch client and helpers.  These are optional
+# dependencies; if unavailable the module will still operate in local
+# evaluation mode.  Remote evaluation functions should handle the absence
+# gracefully.
+try:
+    from elasticsearch import Elasticsearch, helpers  # type: ignore[import]
+except Exception:
+    Elasticsearch = None  # type: ignore[assignment]
+    helpers = None  # type: ignore[assignment]
 
 SUPPORTED_LOCAL_OPS = {"contains", "startswith", "endswith", "equals", "re"}
 

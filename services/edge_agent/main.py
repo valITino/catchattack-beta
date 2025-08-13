@@ -9,7 +9,12 @@ import os
 from io import BytesIO
 from typing import Any
 
-from aiokafka import AIOKafkaProducer
+# ``aiokafka`` is optional.  Delay import of the producer until startup
+# so that environments without the dependency can still import this module.
+try:
+    from aiokafka import AIOKafkaProducer  # type: ignore[import]
+except Exception:
+    AIOKafkaProducer = None  # type: ignore[assignment]
 from fastapi import FastAPI, HTTPException
 from fastavro import schemaless_writer
 
@@ -32,6 +37,10 @@ def _load_avro_schema() -> dict[str, Any]:
 
 @app.on_event("startup")
 async def startup() -> None:
+    if AIOKafkaProducer is None:
+        raise RuntimeError(
+            "aiokafka library is not available; install 'aiokafka' to run the edge agent service."
+        )
     bootstrap = os.getenv("KAFKA_BOOTSTRAP")
     if not bootstrap:
         raise RuntimeError("KAFKA_BOOTSTRAP is not set")

@@ -107,10 +107,21 @@ def lint_rule(rule_id: UUID, db: Session = Depends(get_db), _user=Depends(requir
     rule = db.get(models.Rule, rule_id)
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
+    # Import Sigma lazily so that installations without the pysigma library
+    # can still load this module.  If the import fails, return a helpful
+    # message instead of raising an unhandled ImportError.
     try:
-        from sigma.collection import SigmaCollection
-        from sigma.exceptions import SigmaError
-
+        from sigma.collection import SigmaCollection  # type: ignore[import]
+        from sigma.exceptions import SigmaError  # type: ignore[import]
+    except Exception:
+        return {
+            "ok": False,
+            "messages": [
+                "Sigma library is not available; install the 'pysigma' package to lint Sigma rules."
+            ],
+            "rules_count": 0,
+        }
+    try:
         sc = SigmaCollection.from_yaml(rule.sigma_yaml)
         return {"ok": True, "messages": ["Sigma parsed successfully"], "rules_count": len(sc.rules)}
     except SigmaError as e:
@@ -120,14 +131,46 @@ def _compile_sigma(yaml_text: str, target: str) -> dict:
     from sigma.collection import SigmaCollection
 
     sc = SigmaCollection.from_yaml(yaml_text)
+    backend = None
+    # Attempt to import the appropriate Sigma backend lazily.  If the
+    # dependency is missing, return a 503 error with instructions.  This
+    # prevents ImportError exceptions when optional backend packages are not
+    # installed.
     if target == "elastic":
-        from sigma.backends.elasticsearch.elasticsearch_lucene import LuceneBackend
+        try:
+            from sigma.backends.elasticsearch.elasticsearch_lucene import LuceneBackend  # type: ignore[import]
+        except Exception:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Sigma Elasticsearch backend is unavailable; install the 'pysigma-backend-elasticsearch' "
+                    "package to compile Sigma rules to Elastic queries."
+                ),
+            )
         backend = LuceneBackend()
     elif target == "splunk":
-        from sigma.backends.splunk.splunk import SplunkBackend
+        try:
+            from sigma.backends.splunk.splunk import SplunkBackend  # type: ignore[import]
+        except Exception:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Sigma Splunk backend is unavailable; install the 'pysigma-backend-splunk' "
+                    "package to compile Sigma rules to Splunk queries."
+                ),
+            )
         backend = SplunkBackend()
     elif target == "sentinel":
-        from sigma.backends.sentinel.sentinel import SentinelBackend
+        try:
+            from sigma.backends.sentinel.sentinel import SentinelBackend  # type: ignore[import]
+        except Exception:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Sigma Sentinel backend is unavailable; install the 'pysigma-backend-sentinel' "
+                    "package to compile Sigma rules to Sentinel queries."
+                ),
+            )
         backend = SentinelBackend()
     else:
         raise HTTPException(status_code=400, detail="Unsupported target")

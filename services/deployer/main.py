@@ -5,12 +5,23 @@ import json
 import os
 import time
 
-from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
+# Delay aiokafka imports until runtime.  ``aiokafka`` is an optional
+# dependency; if it's not installed, the service will emit a clear error
+# message instead of failing at import time.
+try:
+    from aiokafka import AIOKafkaConsumer, AIOKafkaProducer  # type: ignore[import]
+except Exception:
+    AIOKafkaConsumer = None  # type: ignore[assignment]
+    AIOKafkaProducer = None  # type: ignore[assignment]
 
 from .clients.edr import push_rule as push_edr
 from .clients.nessus import push_rule as push_nessus
 
 async def main() -> None:
+    if AIOKafkaConsumer is None or AIOKafkaProducer is None:
+        raise RuntimeError(
+            "aiokafka library is not available; install 'aiokafka' to run the deployer service."
+        )
     bootstrap = os.getenv("KAFKA_BOOTSTRAP")
     if not bootstrap:
         raise RuntimeError("KAFKA_BOOTSTRAP is not set")

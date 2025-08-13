@@ -5,11 +5,21 @@ import json
 import os
 import time
 
-from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
+# Delay aiokafka imports until runtime.  ``aiokafka`` is optional;
+# if it's missing, this service will fail fast with a clear message.
+try:
+    from aiokafka import AIOKafkaConsumer, AIOKafkaProducer  # type: ignore[import]
+except Exception:
+    AIOKafkaConsumer = None  # type: ignore[assignment]
+    AIOKafkaProducer = None  # type: ignore[assignment]
 
 from .sigma_model import sigma_from_logs
 
 async def main() -> None:
+    if AIOKafkaConsumer is None or AIOKafkaProducer is None:
+        raise RuntimeError(
+            "aiokafka library is not available; install 'aiokafka' to run the rule factory service."
+        )
     bootstrap = os.getenv("KAFKA_BOOTSTRAP")
     if not bootstrap:
         raise RuntimeError("KAFKA_BOOTSTRAP is not set")

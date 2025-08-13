@@ -4,7 +4,12 @@ import json
 import os
 from typing import Any
 
-from aiokafka import AIOKafkaProducer
+# ``aiokafka`` is optional; delay import until startup to avoid module import
+# failures on systems where the dependency is missing.
+try:
+    from aiokafka import AIOKafkaProducer  # type: ignore[import]
+except Exception:
+    AIOKafkaProducer = None  # type: ignore[assignment]
 from fastapi import FastAPI
 from jinja2 import Template
 
@@ -21,6 +26,10 @@ PROMPT_TEMPLATE = Template(DEFAULT_PROMPT)
 @app.on_event("startup")
 async def _startup() -> None:
     global producer
+    if AIOKafkaProducer is None:
+        raise RuntimeError(
+            "aiokafka library is not available; install 'aiokafka' to enable real-time script generation notifications."
+        )
     bootstrap = os.getenv("KAFKA_BOOTSTRAP")
     if not bootstrap:
         raise RuntimeError("KAFKA_BOOTSTRAP is not set")

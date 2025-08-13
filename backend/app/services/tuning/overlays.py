@@ -6,9 +6,22 @@ import jsonpatch
 import io
 
 from sigma.parser.collection import SigmaCollectionParser
-from sigma.backends.elasticsearch import ElasticsearchBackend
-from sigma.backends.splunk import SplunkBackend
-from sigma.backends.sentinel import SentinelBackend
+try:
+    # Optional imports for backend connectors.
+    # These backends are only available if the corresponding pysigma backend
+    # packages are installed.  Wrapping the import in a try/except ensures that
+    # this module can be imported even when optional dependencies are missing.
+    from sigma.backends.elasticsearch import ElasticsearchBackend  # type: ignore[import]
+except Exception:
+    ElasticsearchBackend = None  # type: ignore[assignment]
+try:
+    from sigma.backends.splunk import SplunkBackend  # type: ignore[import]
+except Exception:
+    SplunkBackend = None  # type: ignore[assignment]
+try:
+    from sigma.backends.sentinel import SentinelBackend  # type: ignore[import]
+except Exception:
+    SentinelBackend = None  # type: ignore[assignment]
 from sigma.exceptions import SigmaError
 
 yaml = YAML()
@@ -45,12 +58,38 @@ def apply_json_patches(base_obj: Any, patches: List[Dict[str, Any]]) -> Any:
     return patched
 
 def compile_sigma(yaml_text: str, target: str) -> Dict[str, Any]:
+    """
+    Convert a Sigma rule YAML string into queries for a specific target backend.
+
+    The ``pysigma`` backend packages are optional dependencies; if the
+    appropriate backend is not installed, this function will raise a
+    ``RuntimeError`` with an explanatory message.  This avoids import errors
+    during module import and provides clearer feedback to API users.
+    """
     sc = SigmaCollectionParser(yaml_text).generate()
+    backend = None
+    # Lazily construct the backend.  If the optional backend is not available,
+    # raise a descriptive error rather than failing with ImportError.
     if target == "elastic":
+        if ElasticsearchBackend is None:
+            raise RuntimeError(
+                "Sigma Elasticsearch backend is unavailable. "
+                "Install the 'pysigma-backend-elasticsearch' package to enable Elastic target compilation."
+            )
         backend = ElasticsearchBackend()
     elif target == "splunk":
+        if SplunkBackend is None:
+            raise RuntimeError(
+                "Sigma Splunk backend is unavailable. "
+                "Install the 'pysigma-backend-splunk' package to enable Splunk target compilation."
+            )
         backend = SplunkBackend()
     elif target == "sentinel":
+        if SentinelBackend is None:
+            raise RuntimeError(
+                "Sigma Sentinel backend is unavailable. "
+                "Install the 'pysigma-backend-sentinel' package to enable Sentinel target compilation."
+            )
         backend = SentinelBackend()
     else:
         raise ValueError("Unsupported target")

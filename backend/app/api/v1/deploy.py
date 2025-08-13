@@ -25,7 +25,16 @@ def get_db():
 
 def _connector(target: str):
     if target == "elastic":
-        from elasticsearch import Elasticsearch
+        # Lazily import the Elasticsearch client.  If the optional dependency
+        # isn't installed, return a 503 so the caller understands why the
+        # operation cannot proceed.
+        try:
+            from elasticsearch import Elasticsearch  # type: ignore[import]
+        except Exception:
+            raise HTTPException(
+                503,
+                "Elasticsearch client library is not available; install the 'elasticsearch' package to deploy to Elastic."
+            )
         return ElasticConnector(Elasticsearch(settings.elastic_url))
     if target == "splunk":
         return SplunkConnector()

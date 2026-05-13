@@ -13,6 +13,7 @@ namespace_separator: "."
 destructive_tools:
   - "splunk.deploy_rule"
   - "splunk.push_rule_to_prod"
+  - "wazuh.deploy_rule"
   - "falcon.push_ioa_rule"
   - "falcon.isolate_host"
   - "sentinel.deploy_rule"
@@ -35,6 +36,11 @@ target_allowlists:
     allowed:
       - "test"
       - "lab"
+  wazuh.deploy_rule:
+    param: "filename"
+    allowed:
+      - "local_rules.xml"
+      - "lab_rules.xml"
 
 # Approval-token configuration. The token itself is read from the env var
 # CATCHATTACK_APPROVAL_TOKEN at startup. Callers supply the matching value
@@ -71,15 +77,26 @@ upstreams:
     mode: "stub"
     description: "Bridge to Go agent fleet (Phase 3)."
 
-  # Mock-or-real switching per addendum §B.2. Phase 2+.
+  # Splunk via the official MCP server (lives inside Splunk's mgmt:8089) once
+  # operator flips mode→real. Until then we route to the in-tree mock under
+  # mcp/mocks/splunk/.
   splunk:
-    mode: "stub"
-    mock_url: "http://localhost:9101"
+    mode: "stdio"
+    real_cmd: "uv run splunk-mock"
     real_url: "https://splunk.example.com:8089/services/mcp"
+    description: "Phase 2 mock; flip to real when Splunk credentials acquired."
+
+  # Wazuh is the no-license SIEM fallback per addendum §B.1. We run the
+  # in-house mcp/wazuh in stdio mode. WAZUH_* env vars must be set in the
+  # proxy's environment.
+  wazuh:
+    mode: "stdio"
+    real_cmd: "uv run wazuh-mcp"
+    description: "In-house Wazuh MCP; talks to wazuh-manager:55000 + wazuh-indexer:9200."
 
   falcon:
     mode: "stub"
-    mock_url: "http://localhost:9102"
+    mock_url: "http://localhost:9103"
     real_cmd: "falcon-mcp --modules detections,hosts,intel"
 
   sentinel:

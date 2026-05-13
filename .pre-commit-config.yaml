@@ -1,7 +1,18 @@
 ---
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.4
+    rev: v0.15.8
     hooks:
       - id: ruff
+        args: [--fix]
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: sigma-lint
+        name: sigma-lint (mcp/sigma lint_sigma)
+        description: Validate Sigma YAML rules under detections/ via mcp/sigma.
+        entry: uv run python scripts/sigma_pre_commit.py
+        language: system
+        files: ^detections/.*\.ya?ml$
+        pass_filenames: true

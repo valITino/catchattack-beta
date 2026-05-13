@@ -50,12 +50,16 @@ fmt:
 	@command -v pnpm >/dev/null 2>&1 && pnpm -s fmt || echo ">> (pnpm/biome not installed — skip)"
 
 fmt-check:
-	@command -v ruff >/dev/null 2>&1 && ruff format --check . || echo ">> (ruff not installed — skip)"
-	@command -v pnpm >/dev/null 2>&1 && pnpm -s fmt:check || echo ">> (pnpm/biome not installed — skip)"
+	@if command -v ruff >/dev/null 2>&1; then ruff format --check . || exit 1; \
+	  else echo ">> (ruff missing — install via 'uv tool install ruff')"; fi
+	@if command -v pnpm >/dev/null 2>&1; then pnpm -s fmt:check; \
+	  else echo ">> (pnpm missing)"; fi
 
 lint:
-	@command -v ruff >/dev/null 2>&1 && ruff check . || echo ">> (ruff not installed — skip)"
-	@command -v pnpm >/dev/null 2>&1 && pnpm -s check || echo ">> (pnpm/biome not installed — skip)"
+	@if command -v ruff >/dev/null 2>&1; then ruff check . || exit 1; \
+	  else echo ">> (ruff missing)"; fi
+	@if command -v pnpm >/dev/null 2>&1; then pnpm -s check; \
+	  else echo ">> (pnpm missing)"; fi
 
 # -----------------------------------------------------------------------------
 # Tests
@@ -63,10 +67,12 @@ lint:
 
 test: test-py test-ts
 
+PY_PACKAGES := mcp-proxy mcp/sigma mcp/mocks/splunk mcp/wazuh
+
 test-py:
 	@# Run pytest from inside each project so our `mcp/` directory does not
 	@# shadow the installed `mcp` SDK package on sys.path.
-	@for d in mcp-proxy mcp/sigma; do \
+	@for d in $(PY_PACKAGES); do \
 	  if [ -d "$$d/tests" ]; then \
 	    echo ">> pytest $$d"; \
 	    (cd "$$d" && uv run pytest -q) || exit 1; \
@@ -74,7 +80,7 @@ test-py:
 	done
 
 test-mypy:
-	@for d in mcp-proxy mcp/sigma; do \
+	@for d in $(PY_PACKAGES); do \
 	  if [ -d "$$d/src" ]; then \
 	    echo ">> mypy $$d/src"; \
 	    rel=$$(echo "$$d" | sed 's|[^/]*|..|g'); \
@@ -94,11 +100,12 @@ test-ts:
 # -----------------------------------------------------------------------------
 # Phase 0: install + fmt-check.
 # Phase 1: + lint + mypy + pytest on mcp-proxy and mcp/sigma.
+# Phase 2: + mcp/mocks/splunk + mcp/wazuh.
 # Later phases extend further.
 
 verify: install fmt-check lint test-py test-mypy
 	@echo ""
-	@echo "[verify] OK — Phase 1 contract satisfied."
+	@echo "[verify] OK — Phase 2 contract satisfied."
 
 # -----------------------------------------------------------------------------
 # Dev

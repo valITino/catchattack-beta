@@ -53,6 +53,25 @@ jobs:
         working-directory: mcp/sigma
         run: uv run mypy --config-file ../../mypy.ini src
 
+      - name: Pytest — mcp/mocks/splunk
+        working-directory: mcp/mocks/splunk
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/mocks/splunk
+        working-directory: mcp/mocks/splunk
+        run: uv run mypy --config-file ../../../mypy.ini src
+
+      - name: Pytest — mcp/wazuh
+        working-directory: mcp/wazuh
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/wazuh
+        working-directory: mcp/wazuh
+        run: uv run mypy --config-file ../../mypy.ini src
+
+      - name: Sigma lint hook (smoke)
+        run: uv run python scripts/sigma_pre_commit.py detections/enterprise/windows/execution/win_susp_powershell_encoded_b64.yml
+
   typescript:
     name: TS — biome
     runs-on: ubuntu-latest

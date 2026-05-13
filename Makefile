@@ -9,7 +9,7 @@
 # Phases progressively flesh these out. Do NOT chain phase work into this file
 # until the brief greenlights it.
 
-.PHONY: help dev verify fmt fmt-check lint test test-py test-ts \
+.PHONY: help dev verify fmt fmt-check lint test test-py test-mypy test-ts \
         install install-py install-ts clean
 
 help:
@@ -30,8 +30,8 @@ install: install-py install-ts
 
 install-py:
 	@if [ -f pyproject.toml ]; then \
-	  echo ">> uv sync"; \
-	  uv sync || echo ">> (uv not installed yet — skipping)"; \
+	  echo ">> uv sync --all-packages --extra dev"; \
+	  uv sync --all-packages --extra dev || echo ">> (uv not installed yet — skipping)"; \
 	fi
 
 install-ts:
@@ -64,11 +64,23 @@ lint:
 test: test-py test-ts
 
 test-py:
-	@if [ -d mcp ] && find mcp -name "tests" -type d -mindepth 2 2>/dev/null | grep -q .; then \
-	  uv run pytest || true; \
-	else \
-	  echo ">> no Python tests yet"; \
-	fi
+	@# Run pytest from inside each project so our `mcp/` directory does not
+	@# shadow the installed `mcp` SDK package on sys.path.
+	@for d in mcp-proxy mcp/sigma; do \
+	  if [ -d "$$d/tests" ]; then \
+	    echo ">> pytest $$d"; \
+	    (cd "$$d" && uv run pytest -q) || exit 1; \
+	  fi; \
+	done
+
+test-mypy:
+	@for d in mcp-proxy mcp/sigma; do \
+	  if [ -d "$$d/src" ]; then \
+	    echo ">> mypy $$d/src"; \
+	    rel=$$(echo "$$d" | sed 's|[^/]*|..|g'); \
+	    (cd "$$d" && uv run mypy --config-file $$rel/mypy.ini src) || exit 1; \
+	  fi; \
+	done
 
 test-ts:
 	@if find apps packages -name "*.test.ts" -o -name "*.test.tsx" 2>/dev/null | grep -q .; then \
@@ -80,12 +92,13 @@ test-ts:
 # -----------------------------------------------------------------------------
 # Verify (per-phase definition)
 # -----------------------------------------------------------------------------
-# Phase 0 contract: workspace installs succeed and format-check is clean.
-# Later phases extend this.
+# Phase 0: install + fmt-check.
+# Phase 1: + lint + mypy + pytest on mcp-proxy and mcp/sigma.
+# Later phases extend further.
 
-verify: install fmt-check
+verify: install fmt-check lint test-py test-mypy
 	@echo ""
-	@echo "[verify] OK — Phase 0 contract satisfied."
+	@echo "[verify] OK — Phase 1 contract satisfied."
 
 # -----------------------------------------------------------------------------
 # Dev

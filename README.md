@@ -17,8 +17,8 @@ Phases land one at a time with explicit operator greenlight.
 
 | Phase | Status |
 |---|---|
-| 0 — Quarantine + scaffold + proxy skeleton | in progress |
-| 1 — `mcp/sigma` + Claude Desktop hookup | pending |
+| 0 — Quarantine + scaffold + proxy skeleton | done |
+| 1 — `mcp/sigma` + Claude Desktop hookup + proxy routing | done |
 | 2 — Splunk + Wazuh MCP + end-to-end deploy | pending |
 | 3 — Go endpoint agent + capture pipeline | pending |
 | 4 — Closed-loop rule synthesis | pending |
@@ -60,7 +60,22 @@ make install   # uv sync + pnpm install
 make verify    # workspace installs + format check
 ```
 
-`make dev` becomes meaningful from Phase 1 onward.
+Phase 1 capabilities:
+
+```bash
+# Sigma MCP server on stdio (what Claude Desktop launches)
+uv run sigma-mcp
+
+# Or expose it via streamable-HTTP
+uv run sigma-mcp --transport http --port 7110
+
+# Run the proxy (mounts sigma + future upstreams; MCP endpoint at /mcp,
+# health at /health, dry-run preview at /policy/preview)
+cd mcp-proxy && uv run uvicorn mcp_proxy.app:app --port 7100
+```
+
+`make dev` becomes meaningful from Phase 2 onward when `infra/compose.yaml`
+adds Splunk Free and Wazuh.
 
 ## legacy/ is frozen
 

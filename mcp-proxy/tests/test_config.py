@@ -16,7 +16,8 @@ def test_example_config_loads() -> None:
     assert "agents.run_atomic" in cfg.target_allowlists
     assert cfg.target_allowlists["agents.run_atomic"].param == "agent_id"
     assert "sigma" in cfg.upstreams
-    assert cfg.upstreams["sigma"].mode == "stub"
+    assert cfg.upstreams["sigma"].mode == "stdio"
+    assert cfg.upstreams["sigma"].real_cmd is not None
 
 
 def test_unknown_top_level_field_is_rejected(tmp_path: Path) -> None:

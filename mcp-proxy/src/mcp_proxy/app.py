@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .audit import AuditLog
 from .config import ProxyConfig, load_config
 from .policy import PolicyEngine
+from .router import build_router
 
 CONFIG_ENV = "CATCHATTACK_PROXY_CONFIG"
 DEFAULT_CONFIG_PATH = "upstreams.yaml"
@@ -92,10 +93,14 @@ def create_app() -> FastAPI:
             "dry_run_enforced": decision.dry_run_enforced,
         }
 
-    @app.post("/mcp")
-    def mcp_passthrough() -> dict[str, Any]:
-        """Streamable-HTTP MCP endpoint. Implemented in Phase 1."""
-        raise HTTPException(status_code=501, detail="MCP transport lands in Phase 1.")
+    # Mount the FastMCP router as the streamable-HTTP MCP endpoint.
+    router = build_router(config, engine, audit)
+    mcp_app = router.http_app(path="/", transport="http", stateless_http=True)
+    app.mount("/mcp", mcp_app)
+
+    # Re-publish the underlying Starlette lifespan so subprocess upstreams
+    # (sigma-mcp via stdio, etc.) are started/stopped with the app.
+    app.router.lifespan_context = mcp_app.lifespan
 
     return app
 

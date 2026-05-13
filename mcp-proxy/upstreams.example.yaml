@@ -54,9 +54,13 @@ rate_limit_default:
     cooldown_seconds: 30
 
 upstreams:
-  # In-house servers. Real entries land in Phase 1+.
+  # In-house servers.
   sigma:
-    mode: "stub"            # stub | stdio | http
+    # Run `uv run sigma-mcp` from the repo root as a stdio subprocess.
+    # The proxy speaks streamable-HTTP at /mcp; clients call
+    # `sigma.lint_sigma`, `sigma.convert_sigma`, etc.
+    mode: "stdio"
+    real_cmd: "uv run sigma-mcp"
     description: "pySigma wrapper (Phase 1)."
 
   evidence:

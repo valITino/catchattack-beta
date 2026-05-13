@@ -12,6 +12,7 @@ requires-python = ">=3.12"
 # Phase 4: + apps/conductor
 members = [
     "mcp-proxy",
+    "mcp/sigma",
 ]
 
 [tool.ruff]

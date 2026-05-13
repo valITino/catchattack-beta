@@ -34,9 +34,8 @@ jobs:
       - name: Ruff lint
         run: ruff check .
 
-      - name: Sync mcp-proxy
-        working-directory: mcp-proxy
-        run: uv sync --extra dev
+      - name: Sync workspace
+        run: uv sync --all-packages --extra dev
 
       - name: Pytest — mcp-proxy
         working-directory: mcp-proxy
@@ -45,6 +44,14 @@ jobs:
       - name: Mypy — mcp-proxy
         working-directory: mcp-proxy
         run: uv run mypy --config-file ../mypy.ini src
+
+      - name: Pytest — mcp/sigma
+        working-directory: mcp/sigma
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/sigma
+        working-directory: mcp/sigma
+        run: uv run mypy --config-file ../../mypy.ini src
 
   typescript:
     name: TS — biome

@@ -1,0 +1,35 @@
+title: Suspicious PowerShell EncodedCommand Execution
+id: 7c5a6f04-2b27-4f0c-9d7a-7a8f3f6e8b21
+status: experimental
+description: |
+    Detects use of PowerShell's -EncodedCommand parameter, which adversaries
+    commonly use to obfuscate base64-encoded payloads at execution time. The
+    rule is intentionally behaviour-focused; legitimate use by admins or
+    deployment tools should be tuned via parent-process filters and
+    falsepositives.
+references:
+    - https://attack.mitre.org/techniques/T1059/001/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1059.001/T1059.001.md
+author: CatchAttack
+date: 2026-05-13
+tags:
+    - attack.execution
+    - attack.t1059.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_image:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+    selection_args:
+        CommandLine|contains:
+            - ' -EncodedCommand '
+            - ' -enc '
+            - ' -ec '
+    condition: selection_image and selection_args
+falsepositives:
+    - Administrative scripts launched by SCCM / Intune that base64 their args.
+    - Build automation invoking PowerShell with encoded arguments.
+level: high

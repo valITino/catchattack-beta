@@ -1,0 +1,83 @@
+# MCP proxy upstream registry.
+#
+# Each entry registers one upstream MCP server. The proxy exposes its tools
+# under the namespace `<key>.<tool>` (e.g. `sigma.lint_sigma`).
+#
+# Phase 0 ships this file as configuration-only — transports are wired up
+# in Phase 1. Copy to upstreams.yaml and edit for local dev.
+
+namespace_separator: "."
+
+# Destructive tools that require dry_run=true OR a valid approval token.
+# Match is by the fully-qualified namespaced name.
+destructive_tools:
+  - "splunk.deploy_rule"
+  - "splunk.push_rule_to_prod"
+  - "falcon.push_ioa_rule"
+  - "falcon.isolate_host"
+  - "sentinel.deploy_rule"
+  - "chronicle.deploy_rule"
+  - "agents.run_atomic"
+  - "agents.start_capture"
+  - "agents.stop_capture"
+
+# Per-tool target-identifier allowlists. Calls to a destructive tool whose
+# target is not in this set are rejected unless an approval token is supplied.
+# `param` is the JSON path of the target identifier in the tool's input.
+target_allowlists:
+  agents.run_atomic:
+    param: "agent_id"
+    allowed:
+      - "lab-linux-01"
+      - "lab-win-01"
+  splunk.deploy_rule:
+    param: "index_target"
+    allowed:
+      - "test"
+      - "lab"
+
+# Approval-token configuration. The token itself is read from the env var
+# CATCHATTACK_APPROVAL_TOKEN at startup. Callers supply the matching value
+# in the X-CatchAttack-Approval-Token header.
+approval_token_env: "CATCHATTACK_APPROVAL_TOKEN"
+
+# Audit log destination. JSONL, one entry per tool call.
+audit_log_path: "./audit.jsonl"
+
+# Per-upstream rate limit (calls/sec). Circuit breaker trips after N
+# consecutive failures within the window.
+rate_limit_default:
+  rps: 10
+  burst: 20
+  breaker:
+    consecutive_failures: 5
+    cooldown_seconds: 30
+
+upstreams:
+  # In-house servers. Real entries land in Phase 1+.
+  sigma:
+    mode: "stub"            # stub | stdio | http
+    description: "pySigma wrapper (Phase 1)."
+
+  evidence:
+    mode: "stub"
+    description: "Capture-bundle interface (Phase 3)."
+
+  agents:
+    mode: "stub"
+    description: "Bridge to Go agent fleet (Phase 3)."
+
+  # Mock-or-real switching per addendum §B.2. Phase 2+.
+  splunk:
+    mode: "stub"
+    mock_url: "http://localhost:9101"
+    real_url: "https://splunk.example.com:8089/services/mcp"
+
+  falcon:
+    mode: "stub"
+    mock_url: "http://localhost:9102"
+    real_cmd: "falcon-mcp --modules detections,hosts,intel"
+
+  sentinel:
+    mode: "stub"
+    real_url: "https://sentinel.microsoft.com/mcp/triage"

@@ -75,7 +75,7 @@ test-go:
 	  echo ">> no Go module"; \
 	fi
 
-PY_PACKAGES := mcp-proxy mcp/sigma mcp/mocks/splunk mcp/wazuh mcp/evidence mcp/agents
+PY_PACKAGES := mcp-proxy mcp/sigma mcp/mocks/splunk mcp/wazuh mcp/evidence mcp/agents apps/conductor
 
 test-py:
 	@# Run pytest from inside each project so our `mcp/` directory does not
@@ -110,11 +110,12 @@ test-ts:
 # Phase 1: + lint + mypy + pytest on mcp-proxy and mcp/sigma.
 # Phase 2: + mcp/mocks/splunk + mcp/wazuh.
 # Phase 3: + mcp/evidence + mcp/agents + Go agent tests.
+# Phase 4: + apps/conductor (workflow orchestration).
 # Later phases extend further.
 
 verify: install fmt-check lint test-py test-mypy test-go
 	@echo ""
-	@echo "[verify] OK — Phase 3 contract satisfied."
+	@echo "[verify] OK — Phase 4 contract satisfied."
 
 # -----------------------------------------------------------------------------
 # Dev

@@ -17,6 +17,7 @@ members = [
     "mcp/wazuh",
     "mcp/evidence",
     "mcp/agents",
+    "apps/conductor",
 ]
 
 [tool.ruff]

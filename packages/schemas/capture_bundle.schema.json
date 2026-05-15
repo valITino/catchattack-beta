@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://catchattack.dev/schemas/capture_bundle.schema.json",
+  "title": "CaptureBundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "agent_id",
+    "started_at",
+    "ended_at",
+    "trigger",
+    "artifacts",
+    "markers",
+    "stats"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Capture bundle identifier (UUIDv7)."
+    },
+    "agent_id": { "type": "string", "format": "uuid" },
+    "tenant_id": { "type": "string", "format": "uuid" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "ended_at": { "type": "string", "format": "date-time" },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["atomic", "caldera_operation", "manual", "scheduled"]
+        },
+        "atomic_technique": { "type": "string", "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$" },
+        "atomic_test_number": { "type": "integer", "minimum": 1 },
+        "caldera_operation_id": { "type": "string" },
+        "operator_id": { "type": "string", "format": "uuid" }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "video_hls": {
+          "type": "string",
+          "format": "uri",
+          "description": "s3:// (or file://) URI to HLS manifest (index.m3u8)."
+        },
+        "video_mp4": { "type": "string", "format": "uri" },
+        "sysmon_events": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI to JSONL (one event per line), zstd-compressed."
+        },
+        "auditd_events": { "type": "string", "format": "uri" },
+        "esf_events": { "type": "string", "format": "uri" },
+        "pcap": { "type": "string", "format": "uri" },
+        "process_tree": { "type": "string", "format": "uri" },
+        "atomic_output": { "type": "string", "format": "uri" }
+      }
+    },
+    "markers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Marker" }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_count", "duration_ms", "size_bytes"],
+      "properties": {
+        "event_count": { "type": "integer", "minimum": 0 },
+        "duration_ms": { "type": "integer", "minimum": 0 },
+        "size_bytes": { "type": "integer", "minimum": 0 },
+        "top_processes": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "count"],
+            "properties": {
+              "name": { "type": "string" },
+              "count": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Marker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["t_ms", "kind", "label"],
+      "properties": {
+        "t_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds since capture started_at."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "atomic_step_start",
+            "atomic_step_end",
+            "caldera_ability_start",
+            "caldera_ability_end",
+            "labeled_attack",
+            "detection_hit",
+            "sysmon_event",
+            "process_spawn",
+            "network_connection",
+            "operator_note"
+          ]
+        },
+        "label": { "type": "string", "maxLength": 256 },
+        "ref": {
+          "type": "string",
+          "description": "Opaque reference to the underlying event (event_id, hit_id, …)."
+        },
+        "color": {
+          "type": "string",
+          "enum": ["red", "blue", "neutral"],
+          "description": "Red = attacker, blue = defender, neutral = informational."
+        },
+        "filled": {
+          "type": "boolean",
+          "description": "For attack markers: true if a detection covered this attack. For detection markers: true if a labeled attack validated this hit."
+        }
+      }
+    }
+  }
+}

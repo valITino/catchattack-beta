@@ -20,6 +20,7 @@ Phases land one at a time with explicit operator greenlight.
 | 0 — Quarantine + scaffold + proxy skeleton | done |
 | 1 — `mcp/sigma` + Claude Desktop hookup + proxy routing | done |
 | 2 — `mcp/mocks/splunk` + `mcp/wazuh` + deploy flow + compose stack | done |
+| 3 — Go agent + `mcp/evidence` + `mcp/agents` + capture-bundle | done |
 | 3 — Go endpoint agent + capture pipeline | pending |
 | 4 — Closed-loop rule synthesis | pending |
 | 5 — Web UI v1 | pending |

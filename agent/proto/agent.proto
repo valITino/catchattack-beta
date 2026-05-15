@@ -1,0 +1,214 @@
+// CatchAttack endpoint-agent ↔ mcp/agents bridge contract.
+//
+// The agent ALWAYS initiates the connection (firewall convention) via the
+// long-lived Connect bidi stream. The MCP-side bridge sends Commands; the
+// agent replies with Events (inventory, telemetry, atomic output, capture
+// progress, …).
+//
+// Authentication: mTLS at the transport layer. The cert subject CN is the
+// agent_id. No app-layer auth — fail closed at the TLS handshake.
+
+syntax = "proto3";
+
+package catchattack.agent.v1;
+
+option go_package = "github.com/valITino/catchattack-beta/agent/internal/gen/agentv1;agentv1";
+
+import "google/protobuf/timestamp.proto";
+
+// -----------------------------------------------------------------------------
+// Service
+// -----------------------------------------------------------------------------
+
+service AgentBridge {
+  // The agent connects once and stays connected. Server sends Commands;
+  // agent streams Events back.
+  rpc Connect(stream Event) returns (stream Command);
+
+  // One-shot enrollment — exchanges a one-time token for a long-lived agent
+  // identity (the mTLS cert is provisioned client-side from the response).
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+}
+
+// -----------------------------------------------------------------------------
+// Enrollment
+// -----------------------------------------------------------------------------
+
+message EnrollRequest {
+  string one_time_token = 1;
+  string hostname       = 2;
+  Inventory inventory   = 3;
+}
+
+message EnrollResponse {
+  string agent_id    = 1;        // UUIDv7
+  string ca_pem      = 2;        // CA bundle the agent should trust
+  string cert_pem    = 3;        // Agent's signed cert
+  string key_pem     = 4;        // Private key
+  string server_addr = 5;        // Long-lived gRPC endpoint
+}
+
+// -----------------------------------------------------------------------------
+// Commands (server → agent)
+// -----------------------------------------------------------------------------
+
+message Command {
+  string id = 1;  // Echoed back on every Event referencing this command.
+
+  oneof payload {
+    CommandInventory     inventory      = 10;
+    CommandRunAtomic     run_atomic     = 11;
+    CommandStartCapture  start_capture  = 12;
+    CommandStopCapture   stop_capture   = 13;
+    CommandPing          ping           = 14;
+  }
+}
+
+message CommandInventory {}
+
+message CommandRunAtomic {
+  string technique   = 1;  // e.g. "T1059.001"
+  uint32 test_number = 2;
+  bool   dry_run     = 3;
+  uint32 timeout_seconds = 4;
+}
+
+message CommandStartCapture {
+  string capture_id = 1;   // UUIDv7 chosen server-side
+  bool   record_video    = 2;
+  bool   tail_sysmon     = 3;
+  bool   tail_auditd     = 4;
+  bool   pcap            = 5;
+  uint32 video_width     = 6;
+  uint32 video_height    = 7;
+  uint32 video_fps       = 8;
+}
+
+message CommandStopCapture {
+  string capture_id = 1;
+}
+
+message CommandPing {
+  google.protobuf.Timestamp sent_at = 1;
+}
+
+// -----------------------------------------------------------------------------
+// Events (agent → server)
+// -----------------------------------------------------------------------------
+
+message Event {
+  string command_id = 1;   // The command that triggered this; empty for unsolicited events.
+  google.protobuf.Timestamp ts = 2;
+
+  oneof payload {
+    EventHello          hello          = 10;
+    EventInventory      inventory      = 11;
+    EventAtomicOutput   atomic_output  = 12;
+    EventAtomicDone     atomic_done    = 13;
+    EventCaptureStarted capture_started = 14;
+    EventCaptureChunk   capture_chunk  = 15;   // streamed artifact chunks
+    EventCaptureDone    capture_done   = 16;
+    EventTelemetry      telemetry      = 17;
+    EventPong           pong           = 18;
+    EventError          error          = 19;
+  }
+}
+
+message EventHello {
+  string agent_id = 1;
+  string agent_version = 2;
+  Inventory inventory = 3;
+}
+
+message EventInventory {
+  Inventory inventory = 1;
+}
+
+message EventAtomicOutput {
+  string capture_id = 1;
+  string stream = 2;   // "stdout" | "stderr"
+  bytes  chunk  = 3;
+}
+
+message EventAtomicDone {
+  string capture_id = 1;
+  int32  exit_code  = 2;
+  string error      = 3;
+}
+
+message EventCaptureStarted {
+  string capture_id = 1;
+}
+
+message EventCaptureChunk {
+  string capture_id = 1;
+  string artifact = 2;          // "video_hls" | "sysmon_events" | "auditd_events" | "pcap"
+  bytes  data = 3;
+  bool   final = 4;             // last chunk for this artifact
+}
+
+message EventCaptureDone {
+  string capture_id = 1;
+  uint64 event_count = 2;
+  uint64 size_bytes = 3;
+  uint64 duration_ms = 4;
+}
+
+message EventTelemetry {
+  string capture_id = 1;
+  TelemetrySource source = 2;
+  bytes payload = 3;            // JSON-Lines event as captured from the OS
+}
+
+message EventPong {
+  google.protobuf.Timestamp received_at = 1;
+}
+
+message EventError {
+  string message = 1;
+  string detail = 2;
+}
+
+// -----------------------------------------------------------------------------
+// Common
+// -----------------------------------------------------------------------------
+
+enum TelemetrySource {
+  TELEMETRY_SOURCE_UNSPECIFIED = 0;
+  TELEMETRY_SOURCE_SYSMON      = 1;
+  TELEMETRY_SOURCE_AUDITD      = 2;
+  TELEMETRY_SOURCE_ESF         = 3;
+}
+
+message Inventory {
+  string hostname = 1;
+  string os = 2;        // "windows" | "linux" | "darwin"
+  string os_version = 3;
+  string arch = 4;      // "amd64" | "arm64"
+  repeated string ip_addresses = 5;
+  repeated Process processes = 6;
+  repeated Software software = 7;
+  EDRPresence edr = 8;
+  google.protobuf.Timestamp captured_at = 9;
+}
+
+message Process {
+  uint32 pid = 1;
+  uint32 ppid = 2;
+  string name = 3;
+  string cmdline = 4;
+  string user = 5;
+}
+
+message Software {
+  string name = 1;
+  string version = 2;
+}
+
+message EDRPresence {
+  bool falcon = 1;
+  bool defender = 2;
+  bool elastic_defend = 3;
+  bool sentinelone = 4;
+  repeated string detected_services = 5;
+}

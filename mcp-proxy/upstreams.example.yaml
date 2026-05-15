@@ -21,6 +21,7 @@ destructive_tools:
   - "agents.run_atomic"
   - "agents.start_capture"
   - "agents.stop_capture"
+  - "evidence.add_marker"
 
 # Per-tool target-identifier allowlists. Calls to a destructive tool whose
 # target is not in this set are rejected unless an approval token is supplied.
@@ -70,11 +71,13 @@ upstreams:
     description: "pySigma wrapper (Phase 1)."
 
   evidence:
-    mode: "stub"
+    mode: "stdio"
+    real_cmd: "uv run evidence-mcp"
     description: "Capture-bundle interface (Phase 3)."
 
   agents:
-    mode: "stub"
+    mode: "stdio"
+    real_cmd: "uv run agents-mcp"
     description: "Bridge to Go agent fleet (Phase 3)."
 
   # Splunk via the official MCP server (lives inside Splunk's mgmt:8089) once

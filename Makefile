@@ -9,7 +9,7 @@
 # Phases progressively flesh these out. Do NOT chain phase work into this file
 # until the brief greenlights it.
 
-.PHONY: help dev verify fmt fmt-check lint test test-py test-mypy test-ts \
+.PHONY: help dev verify fmt fmt-check lint test test-py test-mypy test-go test-ts \
         install install-py install-ts clean
 
 help:
@@ -65,9 +65,17 @@ lint:
 # Tests
 # -----------------------------------------------------------------------------
 
-test: test-py test-ts
+test: test-py test-go test-ts
 
-PY_PACKAGES := mcp-proxy mcp/sigma mcp/mocks/splunk mcp/wazuh
+test-go:
+	@if [ -d agent ]; then \
+	  echo ">> go test ./agent/..."; \
+	  (cd agent && go test ./...) || exit 1; \
+	else \
+	  echo ">> no Go module"; \
+	fi
+
+PY_PACKAGES := mcp-proxy mcp/sigma mcp/mocks/splunk mcp/wazuh mcp/evidence mcp/agents
 
 test-py:
 	@# Run pytest from inside each project so our `mcp/` directory does not
@@ -101,11 +109,12 @@ test-ts:
 # Phase 0: install + fmt-check.
 # Phase 1: + lint + mypy + pytest on mcp-proxy and mcp/sigma.
 # Phase 2: + mcp/mocks/splunk + mcp/wazuh.
+# Phase 3: + mcp/evidence + mcp/agents + Go agent tests.
 # Later phases extend further.
 
-verify: install fmt-check lint test-py test-mypy
+verify: install fmt-check lint test-py test-mypy test-go
 	@echo ""
-	@echo "[verify] OK — Phase 2 contract satisfied."
+	@echo "[verify] OK — Phase 3 contract satisfied."
 
 # -----------------------------------------------------------------------------
 # Dev

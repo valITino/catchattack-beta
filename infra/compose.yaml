@@ -101,8 +101,30 @@ services:
     volumes:
       - splunk-var:/opt/splunk/var
 
+  # Object storage for capture bundles (Phase 3+).
+  # In Phase 3 the evidence MCP defaults to filesystem; flip
+  # EVIDENCE_BACKEND=s3 + the MINIO_* env vars to use this.
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-catchattack}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-Ch4ngeMe!}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9000/minio/health/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+
 volumes:
   wazuh-indexer-data:
   wazuh-manager-config:
   wazuh-manager-logs:
   splunk-var:
+  minio-data:

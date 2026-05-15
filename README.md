@@ -22,6 +22,7 @@ Phases land one at a time with explicit operator greenlight.
 | 2 — `mcp/mocks/splunk` + `mcp/wazuh` + deploy flow + compose stack | done |
 | 3 — Go agent + `mcp/evidence` + `mcp/agents` + capture-bundle | done |
 | 4 — Closed-loop rule synthesis + Conductor FastAPI | done |
+| 5 — Web UI v1 (Next.js 15, six routes) | done |
 | 5 — Web UI v1 | pending |
 | 6 — Live WebRTC mode | pending |
 | 7+ — Additional vendor MCPs | pending |

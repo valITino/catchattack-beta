@@ -14,7 +14,11 @@
       "**/build/**",
       "**/coverage/**",
       "**/.venv/**",
-      "**/__pycache__/**"
+      "**/__pycache__/**",
+      "**/.next/**",
+      "apps/web/next-env.d.ts",
+      "apps/web/playwright-report/**",
+      "apps/web/test-results/**"
     ]
   },
   "formatter": {

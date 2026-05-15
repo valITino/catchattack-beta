@@ -53,3 +53,9 @@ audit.jsonl
 .env
 .env.local
 !.env.example
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/.next/
+apps/web/tsconfig.tsbuildinfo

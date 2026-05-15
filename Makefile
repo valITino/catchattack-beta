@@ -97,10 +97,17 @@ test-mypy:
 	done
 
 test-ts:
-	@if find apps packages -name "*.test.ts" -o -name "*.test.tsx" 2>/dev/null | grep -q .; then \
-	  pnpm -r --if-present test; \
+	@if [ -d apps/web ]; then \
+	  echo ">> web typecheck"; \
+	  (cd apps/web && pnpm typecheck) || exit 1; \
+	  echo ">> web build"; \
+	  (cd apps/web && pnpm build) || exit 1; \
+	fi
+	@if [ -d apps/web/tests ] && [ -d apps/web/node_modules/@playwright ]; then \
+	  echo ">> web playwright"; \
+	  (cd apps/web && pnpm exec playwright test) || exit 1; \
 	else \
-	  echo ">> no TS tests yet"; \
+	  echo ">> playwright not installed; skipping (run pnpm exec playwright install chromium)"; \
 	fi
 
 # -----------------------------------------------------------------------------
@@ -111,11 +118,12 @@ test-ts:
 # Phase 2: + mcp/mocks/splunk + mcp/wazuh.
 # Phase 3: + mcp/evidence + mcp/agents + Go agent tests.
 # Phase 4: + apps/conductor (workflow orchestration).
+# Phase 5: + apps/web (Next.js typecheck + build + Playwright).
 # Later phases extend further.
 
-verify: install fmt-check lint test-py test-mypy test-go
+verify: install fmt-check lint test-py test-mypy test-go test-ts
 	@echo ""
-	@echo "[verify] OK — Phase 4 contract satisfied."
+	@echo "[verify] OK — Phase 5 contract satisfied."
 
 # -----------------------------------------------------------------------------
 # Dev

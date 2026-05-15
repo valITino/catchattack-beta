@@ -135,3 +135,15 @@ jobs:
 
       - name: Biome check
         run: pnpm -s check
+
+      - name: Web — typecheck + build
+        working-directory: apps/web
+        run: |
+          pnpm typecheck
+          pnpm build
+
+      - name: Web — Playwright (chromium)
+        working-directory: apps/web
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec playwright test

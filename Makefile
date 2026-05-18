@@ -119,11 +119,12 @@ test-ts:
 # Phase 3: + mcp/evidence + mcp/agents + Go agent tests.
 # Phase 4: + apps/conductor (workflow orchestration).
 # Phase 5: + apps/web (Next.js typecheck + build + Playwright).
+# Phase 6: + live mode (LiveKit publisher, marker hub, /captures/live).
 # Later phases extend further.
 
 verify: install fmt-check lint test-py test-mypy test-go test-ts
 	@echo ""
-	@echo "[verify] OK — Phase 5 contract satisfied."
+	@echo "[verify] OK — Phase 6 contract satisfied."
 
 # -----------------------------------------------------------------------------
 # Dev

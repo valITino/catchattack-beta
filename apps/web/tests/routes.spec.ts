@@ -59,4 +59,13 @@ test.describe("CatchAttack web UI routes", () => {
     await page.goto("/runs");
     await expect(page.locator("h1")).toContainText("Workflow runs");
   });
+
+  test("/captures/live/[run_id] renders the live shell", async ({ page }) => {
+    await page.goto("/captures/live/example-run");
+    await expect(page.locator("h1")).toContainText("Live");
+    // The LIVE badge and the live-markers panel must be present even
+    // without a Conductor (the marker stream just errors gracefully).
+    await expect(page.getByText("● LIVE")).toBeVisible();
+    await expect(page.getByText(/Live markers/)).toBeVisible();
+  });
 });

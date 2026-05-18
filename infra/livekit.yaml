@@ -1,0 +1,24 @@
+# LiveKit server config — local dev only.
+# Keys are also passed via the LIVEKIT_KEYS env var in compose.yaml;
+# this file sets ports + RTC behaviour.
+
+port: 7880
+bind_addresses:
+  - ""
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: false
+
+# Dev keys. Override via $LIVEKIT_API_KEY / $LIVEKIT_API_SECRET.
+keys:
+  devkey: devsecretdevsecretdevsecret012345
+
+logging:
+  level: info
+
+# Egress records to MinIO (S3-compatible).
+room:
+  auto_create: true

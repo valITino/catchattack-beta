@@ -1,0 +1,29 @@
+# CatchAttack endpoint-agent configuration.
+#
+# Each capability is behind a feature flag so an agent can be deployed
+# with a minimal footprint and capabilities turned on per-host.
+
+[agent]
+# Bridge endpoint — set by `agent enroll`, persisted to the cert dir.
+server = ""
+
+[capabilities]
+inventory  = true
+capture    = true
+telemetry  = true
+pcap       = false   # off by default — privacy / disk size
+atomic     = true
+
+[capture]
+width  = 1280
+height = 720
+fps    = 15
+
+# LiveKit live-streaming (Phase 6). When enabled, the agent publishes its
+# screen-capture track to a LiveKit room (room = run id, track =
+# screen-<agent_id>) so the web UI can watch the emulation live.
+[livekit]
+enabled    = false
+url        = ""   # ws(s):// signalling URL, or $LIVEKIT_URL
+api_key    = ""   # or $LIVEKIT_API_KEY
+api_secret = ""   # or $LIVEKIT_API_SECRET

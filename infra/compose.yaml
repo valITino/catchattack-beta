@@ -122,6 +122,37 @@ services:
       timeout: 5s
       retries: 10
 
+  # LiveKit SFU for live emulation streaming (Phase 6).
+  # The Go agent publishes its screen-capture track; browsers subscribe
+  # via /captures/live/<run_id>. Dev keys live in infra/livekit.yaml.
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-devsecretdevsecretdevsecret012345}"
+    ports:
+      - "7880:7880"     # signalling (ws)
+      - "7881:7881"     # TURN/TCP
+      - "50000-50100:50000-50100/udp"  # RTC media
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+
+  # LiveKit Egress records the room to HLS in object storage —
+  # "one pipeline, both outputs" (BUILD_BRIEF.md Phase 6). The recorded
+  # HLS lands in the same MinIO bucket the evidence MCP reads.
+  livekit-egress:
+    image: livekit/egress:latest
+    restart: unless-stopped
+    depends_on:
+      - livekit
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+    volumes:
+      - ./egress.yaml:/etc/egress.yaml:ro
+    cap_add:
+      - SYS_ADMIN
+
 volumes:
   wazuh-indexer-data:
   wazuh-manager-config:

@@ -27,6 +27,9 @@ class WorkflowDeps:
     dedupe_threshold: float = 0.85
     max_refinement_loops: int = 3
     dedupe_corpus_path: str = "detections"
+    # Optional MarkerHub — when set, the workflow publishes live markers
+    # for the /live/{run_id}/markers WebSocket. None in unit tests.
+    marker_hub: Any | None = None
 
 
 _REGISTRY: dict[str, WorkflowFn] = {}

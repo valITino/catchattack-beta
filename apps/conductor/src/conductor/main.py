@@ -17,6 +17,7 @@ from .api import create_app
 from .clients.llm import AnthropicLLM, load_system_prompt
 from .clients.mcp import FastMCPClient
 from .clients.pr import GitHubMCPPROpener, LocalBranchPROpener
+from .livekit import MarkerHub
 from .runs import RunRegistry
 from .workflows import WorkflowDeps
 
@@ -40,6 +41,7 @@ def _build_deps(args: argparse.Namespace) -> WorkflowDeps:
         llm=llm,
         pr=pr_opener,
         system_prompt=load_system_prompt(),
+        marker_hub=MarkerHub(),
     )
 
 

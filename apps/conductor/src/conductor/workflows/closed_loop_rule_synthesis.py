@@ -66,6 +66,36 @@ def _detail(payload: dict[str, Any]) -> str:
     return json.dumps({k: v for k, v in payload.items() if k != "raw"}, default=str)[:240]
 
 
+def _marker(
+    deps: WorkflowDeps,
+    run: Run,
+    *,
+    kind: str,
+    label: str,
+    color: str,
+    filled: bool,
+    t_ms: int = 0,
+) -> None:
+    """Publish a live marker to the MarkerHub (Phase 6 live mode).
+
+    No-op when `deps.marker_hub` is None (unit tests, headless runs). The
+    marker shape matches the capture-bundle Marker so the live timeline
+    and the recorded timeline render identically.
+    """
+    if deps.marker_hub is None:
+        return
+    deps.marker_hub.publish(
+        run.id,
+        {
+            "t_ms": t_ms,
+            "kind": kind,
+            "label": label,
+            "color": color,
+            "filled": filled,
+        },
+    )
+
+
 async def _call(
     deps: WorkflowDeps,
     run: Run,
@@ -132,6 +162,14 @@ async def closed_loop_rule_synthesis(  # noqa: PLR0915 — 11-step linear workfl
         "emulation.run_failed",
     )
     capture_id_1 = receipt["capture_id"]
+    _marker(
+        deps,
+        run,
+        kind="atomic_step_start",
+        label=f"{technique} test {test_number} executing",
+        color="red",
+        filled=True,
+    )
 
     # ---- Step 3: summarise evidence ----------------------------------------
     evidence = await _call(
@@ -268,6 +306,14 @@ async def closed_loop_rule_synthesis(  # noqa: PLR0915 — 11-step linear workfl
     capture_id_2 = receipt_2["capture_id"]
     second_started = datetime.now(tz=UTC) - timedelta(minutes=1)
     second_ended = datetime.now(tz=UTC) + timedelta(minutes=1)
+    _marker(
+        deps,
+        run,
+        kind="atomic_step_start",
+        label=f"{technique} re-emulation (validation)",
+        color="red",
+        filled=True,
+    )
 
     # ---- Step 10: validate the rule fires ----------------------------------
     search = await _call(
@@ -300,6 +346,14 @@ async def closed_loop_rule_synthesis(  # noqa: PLR0915 — 11-step linear workfl
             "rule did not fire on the re-emulation capture",
             {"capture_id": capture_id_2, "spl": spl},
         )
+    _marker(
+        deps,
+        run,
+        kind="detection_hit",
+        label=f"rule fired ({hits} hit(s)) on validation capture",
+        color="blue",
+        filled=True,
+    )
 
     # ---- Step 11: open PR --------------------------------------------------
     fp_md = _fp_report_md(fp)

@@ -21,6 +21,7 @@ import (
 	"github.com/valITino/catchattack-beta/agent/internal/capture"
 	"github.com/valITino/catchattack-beta/agent/internal/enroll"
 	"github.com/valITino/catchattack-beta/agent/internal/inventory"
+	"github.com/valITino/catchattack-beta/agent/internal/livekit"
 )
 
 const version = "0.1.0"
@@ -39,6 +40,7 @@ func main() {
 	root.AddCommand(inventoryCmd())
 	root.AddCommand(atomicCmd())
 	root.AddCommand(captureSpawnCmd())
+	root.AddCommand(liveTokenCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -153,6 +155,45 @@ func captureSpawnCmd() *cobra.Command {
 	cmd.Flags().IntVar(&fps, "fps", 15, "Frames per second")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", true, "Print the ffmpeg invocation without starting it")
 	return cmd
+}
+
+func liveTokenCmd() *cobra.Command {
+	var runID, agentID, url, apiKey, apiSecret string
+	cmd := &cobra.Command{
+		Use:   "live-token",
+		Short: "Mint a LiveKit publisher token for a run (Phase 6).",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			cfg := livekit.Config{
+				URL:       firstNonEmpty(url, os.Getenv("LIVEKIT_URL")),
+				APIKey:    firstNonEmpty(apiKey, os.Getenv("LIVEKIT_API_KEY")),
+				APISecret: firstNonEmpty(apiSecret, os.Getenv("LIVEKIT_API_SECRET")),
+				Enabled:   true,
+			}
+			token, err := livekit.PublisherToken(cfg, runID, agentID)
+			if err != nil {
+				return err
+			}
+			fmt.Println(token)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&runID, "run-id", "", "Workflow run id (→ room name)")
+	cmd.Flags().StringVar(&agentID, "agent-id", "", "This agent's id (→ track name)")
+	cmd.Flags().StringVar(&url, "url", "", "LiveKit URL (or $LIVEKIT_URL)")
+	cmd.Flags().StringVar(&apiKey, "api-key", "", "LiveKit API key (or $LIVEKIT_API_KEY)")
+	cmd.Flags().StringVar(&apiSecret, "api-secret", "", "LiveKit API secret (or $LIVEKIT_API_SECRET)")
+	_ = cmd.MarkFlagRequired("run-id")
+	_ = cmd.MarkFlagRequired("agent-id")
+	return cmd
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func defaultCertDir() string {

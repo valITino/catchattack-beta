@@ -57,6 +57,9 @@ async def execute(run: Run, deps: WorkflowDeps) -> dict[str, Any]:
         run.result = result
     finally:
         run.close()
+        # Signal end-of-run to any /live/{run_id}/markers WebSocket clients.
+        if deps.marker_hub is not None:
+            deps.marker_hub.close(run.id)
     if run.status == RunStatus.SUCCEEDED:
         return run.result or {}
     return run.error or {}

@@ -132,7 +132,6 @@ class InMemoryStratusRunner:
 
     def detonate(self, technique_id: str) -> tuple[TechniqueState, str]:
         self._require(technique_id)
-        # detonate warms first if COLD, then detonates.
         self._state[technique_id] = TechniqueState.DETONATED
         return (
             TechniqueState.DETONATED,

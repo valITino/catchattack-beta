@@ -13,6 +13,7 @@ Run:
 from __future__ import annotations
 
 import argparse
+import zlib
 from typing import Any
 
 from fastmcp import FastMCP
@@ -20,6 +21,15 @@ from fastmcp import FastMCP
 from . import __version__
 from .models import IOARuleResult
 from .store import DEFAULT_SEED, FalconStore
+
+
+def _stable_id(text: str) -> int:
+    """Process-stable 32-bit id from a string.
+
+    `hash()` is salted per-process (PYTHONHASHSEED), so a rule id derived
+    from it changes between runs. crc32 is deterministic.
+    """
+    return zlib.crc32(text.encode())
 
 
 def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
@@ -121,7 +131,7 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
             name=name,
             dry_run=dry_run,
             deployed=not dry_run,
-            rule_group_id=None if dry_run else f"ioarg-{abs(hash(name)) % 10**8:08d}",
+            rule_group_id=None if dry_run else f"ioarg-{_stable_id(name) % 10**8:08d}",
             rendered_payload=payload,
         )
         return result.model_dump(mode="json")

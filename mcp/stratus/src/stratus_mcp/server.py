@@ -22,7 +22,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from . import __version__
-from .models import DetonateResult, RevertResult, StatusReport
+from .models import CleanupResult, DetonateResult, RevertResult, StatusReport
 from .runner import (
     CLIStratusRunner,
     InMemoryStratusRunner,
@@ -141,16 +141,16 @@ def build_server(runner: StratusRunner) -> FastMCP:
         except UnknownTechniqueError as exc:
             return {"error": "unknown_technique", "detail": str(exc)}
         if dry_run:
-            return RevertResult(
+            return CleanupResult(
                 technique_id=technique_id,
-                reverted=False,
+                cleaned=False,
                 state=current,
                 output=f"[dry-run] would destroy infrastructure for {technique_id}",
             ).model_dump(mode="json")
         state, output = runner.cleanup(technique_id)
-        return RevertResult(
+        return CleanupResult(
             technique_id=technique_id,
-            reverted=True,
+            cleaned=True,
             state=state,
             output=output,
         ).model_dump(mode="json")

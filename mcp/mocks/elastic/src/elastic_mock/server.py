@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import random
+import zlib
 from datetime import UTC, datetime
 from typing import Any
 
@@ -89,7 +90,7 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
         ),
     )
     def esql_query_tool(esql: str, lookback_hours: int = 24) -> dict[str, Any]:
-        local = random.Random(hash(esql) & 0xFFFFFFFF)  # noqa: S311
+        local = random.Random(zlib.crc32(esql.encode()))  # noqa: S311
         count = local.randint(0, 50)
         return {
             "esql": esql,
@@ -139,7 +140,7 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
             name=name,
             dry_run=dry_run,
             deployed=not dry_run,
-            rule_id=None if dry_run else f"elastic-rule-{abs(hash(name)) % 10000:04d}",
+            rule_id=None if dry_run else f"elastic-rule-{zlib.crc32(name.encode()) % 10000:04d}",
             rendered_rule=rendered,
         ).model_dump(mode="json")
 

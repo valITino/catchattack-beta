@@ -1,8 +1,6 @@
-"""Tests for the Phase 6 live endpoints: LiveKit token + marker WebSocket."""
+"""Tests for the live endpoints: LiveKit token + marker WebSocket."""
 
 from __future__ import annotations
-
-import os
 
 from conductor.api import create_app
 from conductor.clients.llm import StaticLLM
@@ -72,6 +70,3 @@ def test_marker_websocket_errors_without_hub(tmp_path) -> None:  # type: ignore[
     with TestClient(app) as client, client.websocket_connect("/live/run-1/markers") as ws:
         msg = ws.receive_json()
         assert msg["type"] == "error"
-
-
-_ = os  # keep import explicit for readers

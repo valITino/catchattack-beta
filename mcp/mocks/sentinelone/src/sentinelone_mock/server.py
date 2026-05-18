@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import random
+import zlib
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -123,7 +124,7 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
         ),
     )
     def powerquery_tool(query: str, lookback_hours: int = 24) -> dict[str, Any]:
-        local = random.Random(hash(query) & 0xFFFFFFFF)  # noqa: S311
+        local = random.Random(zlib.crc32(query.encode()))  # noqa: S311
         count = local.randint(0, 80)
         return {
             "query": query,

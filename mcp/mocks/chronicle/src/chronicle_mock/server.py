@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import random
+import zlib
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -90,6 +91,8 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
         )
         for i in range(40)
     ]
+    # Highest-risk first — the synthetic set never changes, so rank once.
+    detections.sort(key=lambda d: d.risk_score, reverse=True)
     rules = [
         YaraLRule(
             rule_id=f"ru_{i:08x}",
@@ -108,7 +111,7 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
         ),
     )
     def udm_search_tool(udm_query: str, lookback_hours: int = 24) -> dict[str, Any]:
-        local = random.Random(hash(udm_query) & 0xFFFFFFFF)  # noqa: S311
+        local = random.Random(zlib.crc32(udm_query.encode()))  # noqa: S311
         count = local.randint(0, 60)
         return {
             "udm_query": udm_query,
@@ -128,10 +131,9 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
         out = detections
         if attack_id:
             out = [d for d in out if d.attack_id == attack_id]
-        ranked = sorted(out, key=lambda d: d.risk_score, reverse=True)
         return {
-            "total": len(ranked),
-            "items": [d.model_dump(mode="json") for d in ranked[:limit]],
+            "total": len(out),
+            "items": [d.model_dump(mode="json") for d in out[:limit]],
         }
 
     @mcp.tool(name="list_rules", description="List YARA-L 2.0 detection rules.")
@@ -152,7 +154,7 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
             rule_name=rule_name,
             dry_run=dry_run,
             deployed=not dry_run,
-            rule_id=None if dry_run else f"ru_{abs(hash(rule_name)) % 10**8:08x}",
+            rule_id=None if dry_run else f"ru_{zlib.crc32(rule_name.encode()) % 10**8:08x}",
             rendered_yaral=yaral_text,
         ).model_dump(mode="json")
 

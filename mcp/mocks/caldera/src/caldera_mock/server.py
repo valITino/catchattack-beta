@@ -121,6 +121,8 @@ def build_server() -> FastMCP:
             "dry_run=true; the proxy enforces approval-token policy."
         ),
     )
+    # Grows only on real (dry_run=false) create_operation calls; bounded in
+    # practice by the approval-gated demo lifetime of the mock process.
     operations: dict[str, Operation] = {}
 
     @mcp.tool(

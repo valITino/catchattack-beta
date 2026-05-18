@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import random
+import zlib
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -140,7 +141,9 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
         ),
     )
     def run_kql_hunt_tool(kql: str, lookback_hours: int = 24) -> dict[str, Any]:
-        rng = random.Random(hash(kql) & 0xFFFFFFFF)  # noqa: S311
+        # crc32, not hash() — the latter is per-process salted, which would
+        # make the "synthetic but stable" row count differ between runs.
+        rng = random.Random(zlib.crc32(kql.encode()))  # noqa: S311
         count = rng.randint(0, 40)
         return {
             "kql": kql,
@@ -194,7 +197,7 @@ def build_server(seed: int = DEFAULT_SEED) -> FastMCP:
             display_name=display_name,
             dry_run=dry_run,
             deployed=not dry_run,
-            rule_id=None if dry_run else f"ar-{abs(hash(display_name)) % 10000:04d}",
+            rule_id=None if dry_run else f"ar-{zlib.crc32(display_name.encode()) % 10000:04d}",
             rendered_arm=arm,
         ).model_dump(mode="json")
 

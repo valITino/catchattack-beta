@@ -72,6 +72,18 @@ class RevertResult(BaseModel):
     output: str = ""
 
 
+class CleanupResult(BaseModel):
+    """Outcome of a `cleanup` call — distinct from RevertResult because
+    cleanup destroys infrastructure rather than undoing an attack."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    technique_id: str
+    cleaned: bool
+    state: TechniqueState
+    output: str = ""
+
+
 class StatusReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

@@ -24,8 +24,7 @@ Phases land one at a time with explicit operator greenlight.
 | 4 — Closed-loop rule synthesis + Conductor FastAPI | done |
 | 5 — Web UI v1 (Next.js 15, six routes) | done |
 | 6 — Live WebRTC mode (LiveKit + marker stream) | done |
-| 7 — `mcp/stratus` + `mcp/mocks/falcon` | done |
-| 7+ — Remaining vendor MCPs (Sentinel, Chronicle, S1, …) | pending |
+| 7 — `mcp/stratus` + 6 vendor mocks (falcon/sentinel/chronicle/s1/elastic/caldera) | done |
 
 ## Layout
 

@@ -19,9 +19,10 @@ Each mock lives at `mcp/mocks/<vendor>/` with:
 
 | Vendor | Status | Phase |
 |---|---|---|
-| `splunk/` | implemented (4 tools, ~50 detections / 12 hosts) | 2 |
-| `falcon/` | pending | 7+ |
-| `sentinel/` | pending | 7+ |
-| `chronicle/` | pending | 7+ |
-| `sentinelone/` | pending | 7+ |
-| `elastic/` | pending | 7+ |
+| `splunk/` | implemented — 4 tools, ~50 detections / 12 hosts | 2 |
+| `falcon/` | implemented — 4 tools, detections/hosts/intel + IOA | 7 |
+| `sentinel/` | implemented — incidents, KQL hunt, analytics rules | 7 |
+| `chronicle/` | implemented — UDM search, detections, YARA-L | 7 |
+| `sentinelone/` | implemented — PowerQuery, alerts, threats (read-only) | 7 |
+| `elastic/` | implemented — ES\|QL, Detection Engine rules | 7 |
+| `caldera/` | implemented — abilities, operations, run-ability | 7 |

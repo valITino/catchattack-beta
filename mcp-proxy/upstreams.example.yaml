@@ -16,8 +16,11 @@ destructive_tools:
   - "wazuh.deploy_rule"
   - "falcon.push_ioa_rule"
   - "falcon.isolate_host"
-  - "sentinel.deploy_rule"
-  - "chronicle.deploy_rule"
+  - "sentinel.deploy_analytics_rule"
+  - "chronicle.deploy_yaral_rule"
+  - "elastic.deploy_detection_rule"
+  - "caldera.create_operation"
+  - "caldera.run_ability"
   - "agents.run_atomic"
   - "agents.start_capture"
   - "agents.stop_capture"
@@ -116,6 +119,34 @@ upstreams:
     real_url: "stdio:falcon-mcp --modules detections,hosts,intel"
     description: "Phase 7 mock; flip to real falcon-mcp when CrowdStrike creds acquired."
 
+  # Vendor MCPs — all routed to in-tree mocks (addendum §B.2) until the
+  # operator acquires credentials and flips real_url / real_cmd.
   sentinel:
-    mode: "stub"
+    mode: "stdio"
+    real_cmd: "uv run sentinel-mock"
     real_url: "https://sentinel.microsoft.com/mcp/triage"
+    description: "Phase 7 mock; flip to the Microsoft-hosted Sentinel MCP."
+
+  chronicle:
+    mode: "stdio"
+    real_cmd: "uv run chronicle-mock"
+    real_url: "stdio:uvx google-secops-mcp"
+    description: "Phase 7 mock; flip to google/mcp-security google-secops-mcp."
+
+  sentinelone:
+    mode: "stdio"
+    real_cmd: "uv run sentinelone-mock"
+    real_url: "stdio:purple-mcp"
+    description: "Phase 7 mock; flip to Sentinel-One/purple-mcp (read-only)."
+
+  elastic:
+    mode: "stdio"
+    real_cmd: "uv run elastic-mock"
+    real_url: "https://kibana.example.com:5601/api/agent_builder/mcp"
+    description: "Phase 7 mock; flip to the Elastic Agent Builder MCP (Kibana 9.2+)."
+
+  caldera:
+    mode: "stdio"
+    real_cmd: "uv run caldera-mock"
+    real_url: "http://caldera.example.com:8888/plugin/mcp"
+    description: "Phase 7 mock; flip to the mitre/mcp Caldera plugin."

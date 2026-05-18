@@ -101,6 +101,18 @@ jobs:
         working-directory: mcp/mocks/falcon
         run: uv run mypy --config-file ../../../mypy.ini src
 
+      - name: Pytest — vendor mocks (sentinel/chronicle/sentinelone/elastic/caldera)
+        run: |
+          for v in sentinel chronicle sentinelone elastic caldera; do
+            (cd "mcp/mocks/$v" && uv run pytest -q) || exit 1
+          done
+
+      - name: Mypy — vendor mocks
+        run: |
+          for v in sentinel chronicle sentinelone elastic caldera; do
+            (cd "mcp/mocks/$v" && uv run mypy --config-file ../../../mypy.ini src) || exit 1
+          done
+
       - name: Pytest — apps/conductor
         working-directory: apps/conductor
         run: uv run pytest -q

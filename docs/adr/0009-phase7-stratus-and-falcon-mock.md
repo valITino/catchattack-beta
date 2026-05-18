@@ -1,7 +1,12 @@
-# ADR-0009: Phase 7 — Stratus Red Team MCP + Falcon mock
+# ADR-0009: Phase 7 — Stratus Red Team MCP + vendor mock fleet
 
 - **Status:** Accepted (Phase 7)
 - **Date:** 2026-05-13
+
+> **Update (same phase):** the first increment shipped `mcp/stratus` +
+> `mcp/mocks/falcon`. This ADR was then extended to cover the rest of the
+> vendor mock fleet — `sentinel`, `chronicle`, `sentinelone`, `elastic`,
+> `caldera` — all built to the same template (§3 below).
 
 ## Context
 
@@ -44,18 +49,35 @@ returns to `WARM` (re-detonatable); `cleanup` destroys infra back to
 `COLD`. No per-technique target allowlist yet — cloud-account scoping is
 a Phase 8 concern when real credentials land.
 
-### 3. `mcp/mocks/falcon` — second instance of the mock pattern
+### 3. The vendor mock fleet — one template, six vendors
 
 Following ADR-0004's mock-or-real strategy (first used for Splunk in
-Phase 2), Falcon gets an in-tree mock conforming to the official
-`falcon-mcp`'s detections/hosts/intel module surface. `FalconStore`
-seeds 12 hosts + 50 detections + 3 intel indicators with field shapes
-drawn from the Falcon REST API (commented per model). `push_ioa_rule`
-renders the real Custom-IOA rule-group payload shape.
+Phase 2), every §A.1 vendor with an official MCP gets an in-tree mock
+conforming to that server's tool surface. Phase 7 completes the fleet:
 
-Flip to real: change `upstreams.falcon.real_cmd` to launch the official
-`falcon-mcp --modules detections,hosts,intel`. The Conductor and UI are
-unaware.
+| Mock | Conforms to | Tools | Notable |
+|---|---|---|---|
+| `falcon` | CrowdStrike `falcon-mcp` (detections/hosts/intel) | search_detections, search_hosts, search_intel, push_ioa_rule | 12 hosts / 50 detections; IOA rule-group payload |
+| `sentinel` | Microsoft-hosted Sentinel MCP (triage) | list_incidents, run_kql_hunt, list_analytics_rules, deploy_analytics_rule | renders the scheduled-rule ARM template |
+| `chronicle` | `google-secops-mcp` | udm_search, list_detections, list_rules, deploy_yaral_rule | YARA-L 2.0 rule create |
+| `sentinelone` | `purple-mcp` | powerquery, list_alerts, list_threats, get_inventory | **read-only** — matches the real server (no deploy tools) |
+| `elastic` | Elastic Agent Builder MCP (Kibana 9.2+) | esql_query, list_detection_rules, deploy_detection_rule | Detection Engine rule payload |
+| `caldera` | `mitre/mcp` Caldera plugin | list_abilities, list_operations, create_operation, run_ability | emulation source, like agents/stratus |
+
+Each is deterministic per seed, exposes strict `additionalProperties:
+false` schemas, and renders the real vendor's deploy payload shape.
+Every deploy/emulation tool defaults `dry_run=true` and is registered in
+the proxy's `destructive_tools`. Flip-to-real is a one-line
+`upstreams.<vendor>.real_cmd`/`real_url` change.
+
+`sentinelone` deliberately exposes **no** destructive tools — the real
+`purple-mcp` is read-only, and the mock matches it (a test asserts no
+tool name contains `deploy`/`push`/`isolate`).
+
+`search_*` tool determinism: query-driven tools (`run_kql_hunt`,
+`udm_search`, `powerquery`, `esql_query`) seed a local RNG from the query
+string so the same query always returns the same synthetic row count —
+this lets the closed-loop workflow's validation step be reproducible.
 
 ### 4. The MITRE ATT&CK MCP is integrate-not-build
 
@@ -71,16 +93,23 @@ this phase.
 Positive:
 - The genuine Phase 7 build item (`mcp/stratus`) is delivered and
   testable offline.
-- Falcon is demoable without CrowdStrike credentials; the closed-loop
-  workflow could target Falcon detections as a future SIEM-equivalent.
-- The proxy registry now covers sigma, evidence, agents, splunk, wazuh,
-  stratus, and falcon — seven upstreams, all routable.
+- The full vendor fleet is demoable without any commercial credentials.
+  The proxy registry now covers twelve upstreams — sigma, evidence,
+  agents, splunk, wazuh, stratus, falcon, sentinel, chronicle,
+  sentinelone, elastic, caldera — all routable, all flip-to-real with a
+  one-line config change.
+- The closed-loop workflow can now target any of the SIEM/EDR backends
+  by namespace; the deploy step is no longer Splunk-specific.
 
 Negative:
-- The remaining Phase 7+ vendors (Sentinel, Defender, Chronicle, S1,
-  Elastic, Caldera, MISP) are not yet wired. Each is ~1 day of mock +
-  registry work following the Falcon template; they are deliberately
-  deferred so each lands as its own reviewable increment.
+- The MISP / CTI integration (brief Phase 7 item #10) is not built —
+  the addendum routes it to `jmstar85/SecurityInfrastructure` and an
+  internal IOC store, which is a larger design question deferred to a
+  later phase.
+- The vendor mocks' query engines are intentionally shallow (seeded RNG
+  keyed on the query string, not real query parsing). LLMs that overfit
+  to a mock's row counts will be surprised by the real backend; the
+  mock READMEs and ADR-0004 flag this.
 - `CLIStratusRunner` output parsing is unimplemented — running real
   cloud detonations needs credentials this environment doesn't have.
   The in-memory runner covers the MCP contract.

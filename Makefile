@@ -75,8 +75,11 @@ test-go:
 	  echo ">> no Go module"; \
 	fi
 
-PY_PACKAGES := mcp-proxy mcp/sigma mcp/mocks/splunk mcp/mocks/falcon mcp/wazuh \
-               mcp/evidence mcp/agents mcp/stratus apps/conductor
+PY_PACKAGES := mcp-proxy mcp/sigma \
+               mcp/mocks/splunk mcp/mocks/falcon mcp/mocks/sentinel \
+               mcp/mocks/chronicle mcp/mocks/sentinelone mcp/mocks/elastic \
+               mcp/mocks/caldera \
+               mcp/wazuh mcp/evidence mcp/agents mcp/stratus apps/conductor
 
 test-py:
 	@# Run pytest from inside each project so our `mcp/` directory does not

@@ -17,11 +17,31 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from conductor.clients.pr import PRArtifacts
-from conductor.runs import Run, StepEvent
+from conductor.runs import EventLevel, Run, StepEvent
 from conductor.workflows import WorkflowDeps, register
 
 TOTAL_STEPS = 11
 _PARAM_TRUNCATE_AT = 200
+# The validation search brackets the re-emulation capture by ±1 minute.
+_VALIDATION_WINDOW = timedelta(minutes=1)
+# Marker kinds/colours — mirror evidence_mcp.models so the live timeline
+# and the recorded timeline render identically. Kept as local constants
+# (rather than importing evidence_mcp) so the Conductor does not depend on
+# the evidence package just for two string literals.
+_MARKER_ATOMIC_START = "atomic_step_start"
+_MARKER_DETECTION_HIT = "detection_hit"
+_COLOR_ATTACKER = "red"
+_COLOR_DEFENDER = "blue"
+
+
+def _siem_query_params(target_siem: str, query: str, **extra: Any) -> dict[str, Any]:
+    """Build the query-tool params for a SIEM target.
+
+    Splunk's tools take the query as `spl`; every other backend takes it as
+    `query`. This one-liner keeps that quirk out of the workflow body.
+    """
+    key = "spl" if target_siem == "splunk" else "query"
+    return {key: query, **extra}
 
 
 class GateFailedError(Exception):
@@ -46,7 +66,7 @@ def _emit(
     params: dict[str, Any] | None = None,
     summary: str | None = None,
     *,
-    level: str = "info",
+    level: EventLevel = EventLevel.INFO,
 ) -> None:
     run.record(
         StepEvent(
@@ -76,7 +96,7 @@ def _marker(
     filled: bool,
     t_ms: int = 0,
 ) -> None:
-    """Publish a live marker to the MarkerHub (Phase 6 live mode).
+    """Publish a live marker to the MarkerHub.
 
     No-op when `deps.marker_hub` is None (unit tests, headless runs). The
     marker shape matches the capture-bundle Marker so the live timeline
@@ -108,7 +128,7 @@ async def _call(
     _emit(run, step, verb, tool=tool, params={k: _truncate(v) for k, v in params.items()})
     result = await deps.mcp.call(tool, params)
     if isinstance(result, dict) and "error" in result:
-        _emit(run, step, "errored", tool=tool, summary=_detail(result), level="error")
+        _emit(run, step, "errored", tool=tool, summary=_detail(result), level=EventLevel.ERROR)
         msg = result.get("detail") or result.get("error", "unknown")
         raise GateFailedError(error_code, msg, result)
     _emit(run, step, "ok", tool=tool, summary=_detail(result))
@@ -165,9 +185,9 @@ async def closed_loop_rule_synthesis(  # noqa: PLR0915 — 11-step linear workfl
     _marker(
         deps,
         run,
-        kind="atomic_step_start",
+        kind=_MARKER_ATOMIC_START,
         label=f"{technique} test {test_number} executing",
-        color="red",
+        color=_COLOR_ATTACKER,
         filled=True,
     )
 
@@ -257,9 +277,7 @@ async def closed_loop_rule_synthesis(  # noqa: PLR0915 — 11-step linear workfl
         7,
         "Estimating false-positive rate",
         f"{target_siem}.estimate_fp_rate",
-        {"spl": spl, "lookback_days": 7}
-        if target_siem == "splunk"
-        else {"query": spl, "lookback_days": 7},
+        _siem_query_params(target_siem, spl, lookback_days=7),
         "fp.failed",
     )
     p95 = fp.get("p95_hits_per_day", 0)
@@ -304,14 +322,15 @@ async def closed_loop_rule_synthesis(  # noqa: PLR0915 — 11-step linear workfl
         "validation.run_failed",
     )
     capture_id_2 = receipt_2["capture_id"]
-    second_started = datetime.now(tz=UTC) - timedelta(minutes=1)
-    second_ended = datetime.now(tz=UTC) + timedelta(minutes=1)
+    now = datetime.now(tz=UTC)
+    second_started = now - _VALIDATION_WINDOW
+    second_ended = now + _VALIDATION_WINDOW
     _marker(
         deps,
         run,
-        kind="atomic_step_start",
+        kind=_MARKER_ATOMIC_START,
         label=f"{technique} re-emulation (validation)",
-        color="red",
+        color=_COLOR_ATTACKER,
         filled=True,
     )
 
@@ -322,20 +341,12 @@ async def closed_loop_rule_synthesis(  # noqa: PLR0915 — 11-step linear workfl
         10,
         "Validating rule fires on second capture",
         f"{target_siem}.search",
-        (
-            {
-                "spl": spl,
-                "earliest": second_started.isoformat(),
-                "latest": second_ended.isoformat(),
-                "max_results": 10,
-            }
-            if target_siem == "splunk"
-            else {
-                "query": spl,
-                "earliest": second_started.isoformat(),
-                "latest": second_ended.isoformat(),
-                "max_results": 10,
-            }
+        _siem_query_params(
+            target_siem,
+            spl,
+            earliest=second_started.isoformat(),
+            latest=second_ended.isoformat(),
+            max_results=10,
         ),
         "validation.search_failed",
     )
@@ -349,9 +360,9 @@ async def closed_loop_rule_synthesis(  # noqa: PLR0915 — 11-step linear workfl
     _marker(
         deps,
         run,
-        kind="detection_hit",
+        kind=_MARKER_DETECTION_HIT,
         label=f"rule fired ({hits} hit(s)) on validation capture",
-        color="blue",
+        color=_COLOR_DEFENDER,
         filled=True,
     )
 

@@ -66,7 +66,7 @@ def _payload(result: object) -> dict[str, object]:
     if structured:
         return structured
     data = getattr(result, "data", None)
-    if data:
+    if data is not None:
         if hasattr(data, "model_dump"):
             return data.model_dump(mode="json")
         if isinstance(data, dict):

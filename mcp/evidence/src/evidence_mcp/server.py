@@ -201,12 +201,6 @@ def _query(capture_dir: Path, filt: dict[str, Any], limit: int) -> EventQueryRes
     Accepts the addendum's filter keys: process_name, parent_name,
     cmd_contains, event_id, t_ms_start, t_ms_end.
     """
-    events_path = capture_dir / "events" / "sysmon.jsonl"
-    if not events_path.exists():
-        events_path = capture_dir / "events" / "auditd.jsonl"
-        if not events_path.exists():
-            return EventQueryResult(events=[], truncated=False)
-
     process_name = filt.get("process_name")
     parent_name = filt.get("parent_name")
     cmd_contains = filt.get("cmd_contains")
@@ -214,9 +208,22 @@ def _query(capture_dir: Path, filt: dict[str, Any], limit: int) -> EventQueryRes
     t_ms_start = filt.get("t_ms_start")
     t_ms_end = filt.get("t_ms_end")
 
+    # Open the sysmon stream, falling back to auditd. Operate-and-handle
+    # rather than exists()-then-open (avoids a TOCTOU stat race).
+    events_dir = capture_dir / "events"
+    fh = None
+    for name in ("sysmon.jsonl", "auditd.jsonl"):
+        try:
+            fh = (events_dir / name).open(encoding="utf-8")
+            break
+        except FileNotFoundError:
+            continue
+    if fh is None:
+        return EventQueryResult(events=[], truncated=False)
+
     out: list[Event] = []
     truncated = False
-    with events_path.open(encoding="utf-8") as fh:
+    with fh:
         for line in fh:
             try:
                 obj = json.loads(line)

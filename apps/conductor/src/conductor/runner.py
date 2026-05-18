@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from conductor import workflows
-from conductor.runs import Run, RunStatus, StepEvent
+from conductor.runs import EventLevel, Run, RunStatus, StepEvent
 from conductor.workflows import WorkflowDeps
 from conductor.workflows.closed_loop_rule_synthesis import GateFailedError
 
@@ -36,7 +36,7 @@ async def execute(run: Run, deps: WorkflowDeps) -> dict[str, Any]:
                 total=-1,
                 verb="gate failed",
                 summary=f"{exc.code}: {exc.message}",
-                level="error",
+                level=EventLevel.ERROR,
             )
         )
     except Exception as exc:
@@ -49,7 +49,7 @@ async def execute(run: Run, deps: WorkflowDeps) -> dict[str, Any]:
                 total=-1,
                 verb="unhandled error",
                 summary=str(exc),
-                level="error",
+                level=EventLevel.ERROR,
             )
         )
     else:

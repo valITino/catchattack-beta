@@ -9,6 +9,7 @@
 import { Badge } from "@/components/Badge";
 import { Card, CardTitle } from "@/components/Card";
 import { callTool } from "@/lib/mcp";
+import type { ReactNode } from "react";
 
 type Agent = {
   agent_id: string;
@@ -30,11 +31,7 @@ async function loadAgents(): Promise<{ items: Agent[] } | { error: string }> {
   }
 }
 
-export default async function AgentsPage() {
-  const result = await loadAgents();
-  const items = "items" in result ? result.items : [];
-  const error = "error" in result ? result.error : null;
-
+function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-1">
@@ -44,15 +41,30 @@ export default async function AgentsPage() {
           start captures.
         </p>
       </header>
+      {children}
+    </div>
+  );
+}
 
-      {error ? (
+export default async function AgentsPage() {
+  const result = await loadAgents();
+
+  if ("error" in result) {
+    return (
+      <Shell>
         <Card>
           <CardTitle>MCP proxy unreachable</CardTitle>
           <p className="text-sm text-fg-muted">
-            {error}. Start the proxy at <code>:7100</code> and reload.
+            {result.error}. Start the proxy at <code>:7100</code> and reload.
           </p>
         </Card>
-      ) : items.length === 0 ? (
+      </Shell>
+    );
+  }
+
+  if (result.items.length === 0) {
+    return (
+      <Shell>
         <Card>
           <CardTitle>No agents</CardTitle>
           <p className="text-sm text-fg-muted">
@@ -63,39 +75,43 @@ export default async function AgentsPage() {
             .
           </p>
         </Card>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((agent) => (
-            <Card key={agent.agent_id}>
-              <CardTitle>
-                <span className="flex items-center gap-2">
-                  <Badge tone={agent.status === "connected" ? "ok" : "warn"}>{agent.status}</Badge>
-                  {agent.hostname}
-                </span>
-              </CardTitle>
-              <dl className="grid grid-cols-2 gap-y-1 text-xs">
-                <dt className="text-fg-muted">agent_id</dt>
-                <dd className="font-mono">{agent.agent_id}</dd>
-                <dt className="text-fg-muted">os / arch</dt>
-                <dd>
-                  {agent.os} / {agent.arch}
-                </dd>
-                <dt className="text-fg-muted">last seen</dt>
-                <dd>{new Date(agent.last_seen).toLocaleString()}</dd>
-              </dl>
-              {agent.tags && agent.tags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {agent.tags.map((tag) => (
-                    <Badge key={tag} tone="neutral">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+      </Shell>
+    );
+  }
+
+  return (
+    <Shell>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {result.items.map((agent) => (
+          <Card key={agent.agent_id}>
+            <CardTitle>
+              <span className="flex items-center gap-2">
+                <Badge tone={agent.status === "connected" ? "ok" : "warn"}>{agent.status}</Badge>
+                {agent.hostname}
+              </span>
+            </CardTitle>
+            <dl className="grid grid-cols-2 gap-y-1 text-xs">
+              <dt className="text-fg-muted">agent_id</dt>
+              <dd className="font-mono">{agent.agent_id}</dd>
+              <dt className="text-fg-muted">os / arch</dt>
+              <dd>
+                {agent.os} / {agent.arch}
+              </dd>
+              <dt className="text-fg-muted">last seen</dt>
+              <dd>{new Date(agent.last_seen).toLocaleString()}</dd>
+            </dl>
+            {agent.tags && agent.tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {agent.tags.map((tag) => (
+                  <Badge key={tag} tone="neutral">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+    </Shell>
   );
 }

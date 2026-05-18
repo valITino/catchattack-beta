@@ -153,8 +153,7 @@ async def test_empty_evidence_aborts(
 ) -> None:
     _seed_happy_path(static_mcp)
     # Replace the summarize result with one that has zero notable markers.
-    static_mcp._handlers = [h for h in static_mcp._handlers if h[0] != "evidence.summarize_capture"]
-    static_mcp.respond_to(
+    static_mcp.override(
         "evidence.summarize_capture",
         result={
             "capture_id": "cap-first",
@@ -179,8 +178,7 @@ async def test_lint_errors_abort(
     static_mcp: StaticMCPClient,
 ) -> None:
     _seed_happy_path(static_mcp)
-    static_mcp._handlers = [h for h in static_mcp._handlers if h[0] != "sigma.lint_sigma"]
-    static_mcp.respond_to(
+    static_mcp.override(
         "sigma.lint_sigma",
         result={
             "ok": False,
@@ -203,10 +201,7 @@ async def test_dedupe_near_duplicate_aborts(
     static_mcp: StaticMCPClient,
 ) -> None:
     _seed_happy_path(static_mcp)
-    static_mcp._handlers = [
-        h for h in static_mcp._handlers if h[0] != "sigma.dedupe_against_corpus"
-    ]
-    static_mcp.respond_to(
+    static_mcp.override(
         "sigma.dedupe_against_corpus",
         result={
             "corpus_path": "/x",
@@ -241,8 +236,7 @@ async def test_fp_too_high_aborts(
     static_mcp: StaticMCPClient,
 ) -> None:
     _seed_happy_path(static_mcp)
-    static_mcp._handlers = [h for h in static_mcp._handlers if h[0] != "splunk.estimate_fp_rate"]
-    static_mcp.respond_to(
+    static_mcp.override(
         "splunk.estimate_fp_rate",
         result={
             "spl": "x",
@@ -268,8 +262,7 @@ async def test_validation_no_hits_aborts(
     static_mcp: StaticMCPClient,
 ) -> None:
     _seed_happy_path(static_mcp)
-    static_mcp._handlers = [h for h in static_mcp._handlers if h[0] != "splunk.search"]
-    static_mcp.respond_to(
+    static_mcp.override(
         "splunk.search",
         result={
             "spl": "x",

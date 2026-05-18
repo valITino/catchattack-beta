@@ -27,6 +27,14 @@ class RunStatus(StrEnum):
     ABORTED = "aborted"
 
 
+class EventLevel(StrEnum):
+    """Severity of a StepEvent. The web UI keys its row styling off this."""
+
+    INFO = "info"
+    WARN = "warn"
+    ERROR = "error"
+
+
 @dataclass(frozen=True, slots=True)
 class StepEvent:
     """One status update emitted by a workflow step."""
@@ -38,7 +46,7 @@ class StepEvent:
     tool: str | None = None
     params: dict[str, Any] | None = None
     summary: str | None = None
-    level: str = "info"  # info|warn|error
+    level: EventLevel = EventLevel.INFO
 
 
 @dataclass(slots=True)
@@ -75,12 +83,20 @@ class Run:
         return self._queue
 
 
+_MAX_RETAINED_RUNS = 200
+
+
 class RunRegistry:
-    """In-memory run registry. Single-process; tests use it directly."""
+    """In-memory run registry. Single-process; tests use it directly.
+
+    Retains the most recent `_MAX_RETAINED_RUNS` runs — older entries are
+    evicted so a long-lived process doesn't leak Run objects (each holds
+    its full event list and a 1024-slot queue).
+    """
 
     def __init__(self) -> None:
         self._runs: dict[str, Run] = {}
-        self._recent: deque[str] = deque(maxlen=200)
+        self._recent: deque[str] = deque(maxlen=_MAX_RETAINED_RUNS)
 
     def create(self, workflow: str, inputs: dict[str, Any]) -> Run:
         rid = str(uuid.uuid4())
@@ -91,6 +107,10 @@ class RunRegistry:
             created_at=datetime.now(tz=UTC),
             inputs=inputs,
         )
+        # When _recent is full, appending evicts the oldest id — drop its
+        # Run from _runs too so the dict stays bounded.
+        if len(self._recent) == self._recent.maxlen:
+            self._runs.pop(self._recent[0], None)
         self._runs[rid] = run
         self._recent.append(rid)
         return run

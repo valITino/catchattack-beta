@@ -109,6 +109,22 @@ class StaticMCPClient:
             )
         )
 
+    def override(
+        self,
+        dotted_tool: str,
+        params_subset: dict[str, Any] | None = None,
+        *,
+        result: dict[str, Any] | None = None,
+        error: Exception | None = None,
+    ) -> None:
+        """Drop every handler for `dotted_tool` and register a fresh one.
+
+        Tests use this to start from a happy-path seed and then make one
+        tool fail — without reaching into the handler list directly.
+        """
+        self._handlers = [h for h in self._handlers if h[0] != dotted_tool]
+        self.respond_to(dotted_tool, params_subset, result=result, error=error)
+
     async def call(self, dotted_tool: str, params: dict[str, Any]) -> dict[str, Any]:
         self._calls.append((dotted_tool, params))
         for tool, subset, response in self._handlers:

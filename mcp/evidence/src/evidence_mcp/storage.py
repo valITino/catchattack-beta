@@ -64,6 +64,12 @@ class FilesystemStorage:
         self._root = Path(root)
         self._root.mkdir(parents=True, exist_ok=True)
         self._lock = RLock()
+        # capture_id → capture directory. Built once by scanning the tree,
+        # then kept current by put_bundle — so reads are O(1) instead of an
+        # O(total captures) rglob per call.
+        self._index: dict[str, Path] = {
+            m.parent.name: m.parent for m in self._root.rglob("manifest.json")
+        }
 
     # ---- path resolution ---------------------------------------------------
 
@@ -88,6 +94,7 @@ class FilesystemStorage:
             )
             summary = self._compute_summary(bundle)
             (d / "summary.json").write_text(summary.model_dump_json(indent=2), encoding="utf-8")
+            self._index[bundle.id] = d
             return d
 
     def put_event_stream(
@@ -133,7 +140,8 @@ class FilesystemStorage:
         offset: int = 0,
     ) -> CaptureList:
         items: list[CaptureListItem] = []
-        for manifest in sorted(self._root.rglob("manifest.json")):
+        for capture_dir in sorted(self._index.values()):
+            manifest = capture_dir / "manifest.json"
             try:
                 bundle = CaptureBundle.model_validate_json(manifest.read_text(encoding="utf-8"))
             except (ValueError, OSError):
@@ -187,10 +195,15 @@ class FilesystemStorage:
     # ---- helpers -----------------------------------------------------------
 
     def _find_dir(self, bundle_id: str) -> Path:
-        # Scan tenants/*/captures/yyyy/mm/<id>/ — Phase 3, no DB index yet.
         with self._lock:
+            cached = self._index.get(bundle_id)
+            if cached is not None and (cached / "manifest.json").exists():
+                return cached
+            # Cache miss (or stale entry) — one rglob to recover, e.g. a
+            # capture written by another process.
             for manifest in self._root.rglob("manifest.json"):
                 if manifest.parent.name == bundle_id:
+                    self._index[bundle_id] = manifest.parent
                     return manifest.parent
         raise CaptureNotFoundError(bundle_id)
 

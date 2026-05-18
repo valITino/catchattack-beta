@@ -1,11 +1,13 @@
 /**
  * MITRE ATT&CK matrix data for the /coverage page.
  *
- * Phase 5 ships a static seed (14 enterprise tactics, ~120 representative
+ * Ships a static seed (14 enterprise tactics, ~120 representative
  * techniques) so the matrix renders even without the `mitre` MCP. When the
- * `mitre` upstream is wired in Phase 7+, `loadTactics()` will switch to
- * calling `mitre.get_enterprise_layer` via the proxy.
+ * `mitre` upstream is wired up, this switches to calling
+ * `mitre.get_enterprise_layer` via the proxy.
  */
+
+import { listRules } from "./rules";
 
 export type Technique = {
   id: string;
@@ -260,57 +262,26 @@ export type Coverage = {
   env_confidence: number; // 0..1
 };
 
+const DEFAULT_ENV_CONFIDENCE = 0.8;
+
 /**
- * Server-side coverage lookup. Phase 5: derives from the local
- * detections/ filesystem (rule counts per ATT&CK tag). Phase 7+ swaps to
- * `mitre.get_coverage_layer` via the proxy.
+ * Per-technique detection coverage, aggregated from the detection-as-code
+ * repo. Derived from `listRules()` so `/coverage` and `/rules` share one
+ * cached tree walk. Phase 7+ swaps this for `mitre.get_coverage_layer`.
  */
 export async function loadCoverage(): Promise<Map<string, Coverage>> {
-  const fs = await import("node:fs/promises");
-  const path = await import("node:path");
-
   const out = new Map<string, Coverage>();
-  const root = path.resolve(process.cwd(), "..", "..", "detections");
-  let entries: string[] = [];
-  try {
-    entries = await walk(fs, root);
-  } catch {
-    return out;
-  }
-  for (const file of entries) {
-    if (!/\.ya?ml$/i.test(file)) continue;
-    try {
-      const text = await fs.readFile(file, "utf-8");
-      const tagMatches = text.matchAll(/attack\.(t\d{4}(?:\.\d{3})?)/gi);
-      for (const m of tagMatches) {
-        const id = m[1]?.toUpperCase();
-        if (!id) continue;
-        const prev = out.get(id) ?? {
-          technique_id: id,
-          rules: 0,
-          validated: 0,
-          env_confidence: 0.8,
-        };
-        prev.rules += 1;
-        prev.validated += /status:\s*stable/i.test(text) ? 1 : 0;
-        out.set(id, prev);
-      }
-    } catch {
-      // skip unreadable
-    }
-  }
-  return out;
-}
-
-async function walk(fs: typeof import("node:fs/promises"), dir: string): Promise<string[]> {
-  const out: string[] = [];
-  const items = await fs.readdir(dir, { withFileTypes: true });
-  for (const item of items) {
-    const full = `${dir}/${item.name}`;
-    if (item.isDirectory()) {
-      out.push(...(await walk(fs, full)));
-    } else if (item.isFile()) {
-      out.push(full);
+  for (const rule of await listRules()) {
+    for (const id of rule.techniques) {
+      const prev = out.get(id) ?? {
+        technique_id: id,
+        rules: 0,
+        validated: 0,
+        env_confidence: DEFAULT_ENV_CONFIDENCE,
+      };
+      prev.rules += 1;
+      prev.validated += rule.status === "stable" ? 1 : 0;
+      out.set(id, prev);
     }
   }
   return out;

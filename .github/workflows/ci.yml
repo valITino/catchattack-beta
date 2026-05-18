@@ -85,6 +85,22 @@ jobs:
         working-directory: mcp/agents
         run: uv run mypy --config-file ../../mypy.ini src
 
+      - name: Pytest — mcp/stratus
+        working-directory: mcp/stratus
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/stratus
+        working-directory: mcp/stratus
+        run: uv run mypy --config-file ../../mypy.ini src
+
+      - name: Pytest — mcp/mocks/falcon
+        working-directory: mcp/mocks/falcon
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/mocks/falcon
+        working-directory: mcp/mocks/falcon
+        run: uv run mypy --config-file ../../../mypy.ini src
+
       - name: Pytest — apps/conductor
         working-directory: apps/conductor
         run: uv run pytest -q

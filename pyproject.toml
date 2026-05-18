@@ -14,9 +14,11 @@ members = [
     "mcp-proxy",
     "mcp/sigma",
     "mcp/mocks/splunk",
+    "mcp/mocks/falcon",
     "mcp/wazuh",
     "mcp/evidence",
     "mcp/agents",
+    "mcp/stratus",
     "apps/conductor",
 ]
 

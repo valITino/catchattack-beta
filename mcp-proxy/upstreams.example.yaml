@@ -22,6 +22,9 @@ destructive_tools:
   - "agents.start_capture"
   - "agents.stop_capture"
   - "evidence.add_marker"
+  - "stratus.detonate"
+  - "stratus.revert"
+  - "stratus.cleanup"
 
 # Per-tool target-identifier allowlists. Calls to a destructive tool whose
 # target is not in this set are rejected unless an approval token is supplied.
@@ -97,10 +100,21 @@ upstreams:
     real_cmd: "uv run wazuh-mcp"
     description: "In-house Wazuh MCP; talks to wazuh-manager:55000 + wazuh-indexer:9200."
 
+  # Stratus Red Team — in-house MCP (no upstream exists, addendum §A.2).
+  # Cloud TTP emulation for AWS / Azure / GCP / Kubernetes.
+  stratus:
+    mode: "stdio"
+    real_cmd: "uv run stratus-mcp"
+    description: "In-house Stratus Red Team MCP (Phase 7)."
+
+  # CrowdStrike Falcon via the official falcon-mcp once operator flips
+  # mode→real. Until then we route to the in-tree mock under
+  # mcp/mocks/falcon/.
   falcon:
-    mode: "stub"
-    mock_url: "http://localhost:9103"
-    real_cmd: "falcon-mcp --modules detections,hosts,intel"
+    mode: "stdio"
+    real_cmd: "uv run falcon-mock"
+    real_url: "stdio:falcon-mcp --modules detections,hosts,intel"
+    description: "Phase 7 mock; flip to real falcon-mcp when CrowdStrike creds acquired."
 
   sentinel:
     mode: "stub"

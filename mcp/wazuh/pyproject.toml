@@ -1,0 +1,32 @@
+[project]
+name = "wazuh-mcp"
+version = "0.1.0"
+description = "CatchAttack — Wazuh SIEM/XDR MCP server (in-house, no upstream MCP exists)."
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=2.10,<4",
+    "httpx>=0.27",
+    "pydantic>=2.9",
+    "structlog>=24.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "mypy>=1.13",
+]
+
+[project.scripts]
+wazuh-mcp = "wazuh_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wazuh_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

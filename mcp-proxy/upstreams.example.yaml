@@ -1,0 +1,152 @@
+# MCP proxy upstream registry.
+#
+# Each entry registers one upstream MCP server. The proxy exposes its tools
+# under the namespace `<key>.<tool>` (e.g. `sigma.lint_sigma`).
+#
+# Phase 0 ships this file as configuration-only — transports are wired up
+# in Phase 1. Copy to upstreams.yaml and edit for local dev.
+
+namespace_separator: "."
+
+# Destructive tools that require dry_run=true OR a valid approval token.
+# Match is by the fully-qualified namespaced name.
+destructive_tools:
+  - "splunk.deploy_rule"
+  - "splunk.push_rule_to_prod"
+  - "wazuh.deploy_rule"
+  - "falcon.push_ioa_rule"
+  - "falcon.isolate_host"
+  - "sentinel.deploy_analytics_rule"
+  - "chronicle.deploy_yaral_rule"
+  - "elastic.deploy_detection_rule"
+  - "caldera.create_operation"
+  - "caldera.run_ability"
+  - "agents.run_atomic"
+  - "agents.start_capture"
+  - "agents.stop_capture"
+  - "evidence.add_marker"
+  - "stratus.detonate"
+  - "stratus.revert"
+  - "stratus.cleanup"
+
+# Per-tool target-identifier allowlists. Calls to a destructive tool whose
+# target is not in this set are rejected unless an approval token is supplied.
+# `param` is the JSON path of the target identifier in the tool's input.
+target_allowlists:
+  agents.run_atomic:
+    param: "agent_id"
+    allowed:
+      - "lab-linux-01"
+      - "lab-win-01"
+  splunk.deploy_rule:
+    param: "index_target"
+    allowed:
+      - "test"
+      - "lab"
+  wazuh.deploy_rule:
+    param: "filename"
+    allowed:
+      - "local_rules.xml"
+      - "lab_rules.xml"
+
+# Approval-token configuration. The token itself is read from the env var
+# CATCHATTACK_APPROVAL_TOKEN at startup. Callers supply the matching value
+# in the X-CatchAttack-Approval-Token header.
+approval_token_env: "CATCHATTACK_APPROVAL_TOKEN"
+
+# Audit log destination. JSONL, one entry per tool call.
+audit_log_path: "./audit.jsonl"
+
+# Per-upstream rate limit (calls/sec). Circuit breaker trips after N
+# consecutive failures within the window.
+rate_limit_default:
+  rps: 10
+  burst: 20
+  breaker:
+    consecutive_failures: 5
+    cooldown_seconds: 30
+
+upstreams:
+  # In-house servers.
+  sigma:
+    # Run `uv run sigma-mcp` from the repo root as a stdio subprocess.
+    # The proxy speaks streamable-HTTP at /mcp; clients call
+    # `sigma.lint_sigma`, `sigma.convert_sigma`, etc.
+    mode: "stdio"
+    real_cmd: "uv run sigma-mcp"
+    description: "pySigma wrapper (Phase 1)."
+
+  evidence:
+    mode: "stdio"
+    real_cmd: "uv run evidence-mcp"
+    description: "Capture-bundle interface (Phase 3)."
+
+  agents:
+    mode: "stdio"
+    real_cmd: "uv run agents-mcp"
+    description: "Bridge to Go agent fleet (Phase 3)."
+
+  # Splunk via the official MCP server (lives inside Splunk's mgmt:8089) once
+  # operator flips mode→real. Until then we route to the in-tree mock under
+  # mcp/mocks/splunk/.
+  splunk:
+    mode: "stdio"
+    real_cmd: "uv run splunk-mock"
+    real_url: "https://splunk.example.com:8089/services/mcp"
+    description: "Phase 2 mock; flip to real when Splunk credentials acquired."
+
+  # Wazuh is the no-license SIEM fallback per addendum §B.1. We run the
+  # in-house mcp/wazuh in stdio mode. WAZUH_* env vars must be set in the
+  # proxy's environment.
+  wazuh:
+    mode: "stdio"
+    real_cmd: "uv run wazuh-mcp"
+    description: "In-house Wazuh MCP; talks to wazuh-manager:55000 + wazuh-indexer:9200."
+
+  # Stratus Red Team — in-house MCP (no upstream exists, addendum §A.2).
+  # Cloud TTP emulation for AWS / Azure / GCP / Kubernetes.
+  stratus:
+    mode: "stdio"
+    real_cmd: "uv run stratus-mcp"
+    description: "In-house Stratus Red Team MCP (Phase 7)."
+
+  # CrowdStrike Falcon via the official falcon-mcp once operator flips
+  # mode→real. Until then we route to the in-tree mock under
+  # mcp/mocks/falcon/.
+  falcon:
+    mode: "stdio"
+    real_cmd: "uv run falcon-mock"
+    real_url: "stdio:falcon-mcp --modules detections,hosts,intel"
+    description: "Phase 7 mock; flip to real falcon-mcp when CrowdStrike creds acquired."
+
+  # Vendor MCPs — all routed to in-tree mocks (addendum §B.2) until the
+  # operator acquires credentials and flips real_url / real_cmd.
+  sentinel:
+    mode: "stdio"
+    real_cmd: "uv run sentinel-mock"
+    real_url: "https://sentinel.microsoft.com/mcp/triage"
+    description: "Phase 7 mock; flip to the Microsoft-hosted Sentinel MCP."
+
+  chronicle:
+    mode: "stdio"
+    real_cmd: "uv run chronicle-mock"
+    real_url: "stdio:uvx google-secops-mcp"
+    description: "Phase 7 mock; flip to google/mcp-security google-secops-mcp."
+
+  sentinelone:
+    mode: "stdio"
+    real_cmd: "uv run sentinelone-mock"
+    real_url: "stdio:purple-mcp"
+    description: "Phase 7 mock; flip to Sentinel-One/purple-mcp (read-only)."
+
+  elastic:
+    mode: "stdio"
+    real_cmd: "uv run elastic-mock"
+    real_url: "https://kibana.example.com:5601/api/agent_builder/mcp"
+    description: "Phase 7 mock; flip to the Elastic Agent Builder MCP (Kibana 9.2+)."
+
+  caldera:
+    mode: "stdio"
+    real_cmd: "uv run caldera-mock"
+    real_url: "http://caldera.example.com:8888/plugin/mcp"
+    description: "Phase 7 mock; flip to the mitre/mcp Caldera plugin."

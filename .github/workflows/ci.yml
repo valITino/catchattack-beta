@@ -1,104 +1,175 @@
-# yamllint disable rule:line-length
----
-name: CI
+name: ci
 
-'on':
+on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - "claude/**"
+      - "feature/**"
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  backend:
+  python:
+    name: Python — ruff + mypy + pytest
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: catchattack
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=5s --health-timeout=5s --health-retries=10
-      elastic:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
-        env:
-          discovery.type: single-node
-          xpack.security.enabled: "false"
-        ports: ["9200:9200"]
-        options: >-
-          --health-cmd="curl -s http://localhost:9200 >/dev/null || exit 1"
-          --health-interval=10s --health-timeout=5s --health-retries=12
-
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with: {python-version: "3.11"}
-      - name: Install backend
-        run: |
-          pip install -U pip
-          pip install -e backend
-          pip install ruff mypy
-      - name: Lint & type check
-        run: |
-          ruff check backend
-          mypy backend || true
-      - name: Alembic migrate
-        env:
-          DB_DSN: postgresql+psycopg://postgres:postgres@localhost:5432/catchattack
-        run: |
-          cd backend
-          alembic upgrade head
-      - name: Run API (background)
-        env:
-          DB_DSN: postgresql+psycopg://postgres:postgres@localhost:5432/catchattack
-          ELASTIC_URL: http://localhost:9200
-        run: |
-          nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 & sleep 3
-      - name: Backend tests
-        run: |
-          pytest -q
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
+      - uses: astral-sh/setup-uv@v3
         with:
-          name: backend-coverage
-          path: backend/.coverage
-          if-no-files-found: ignore
+          version: "0.5.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-  frontend:
+      - name: Install ruff (standalone, fast)
+        run: uv tool install ruff
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Sync workspace
+        run: uv sync --all-packages --extra dev
+
+      - name: Pytest — mcp-proxy
+        working-directory: mcp-proxy
+        run: uv run pytest -q
+
+      - name: Mypy — mcp-proxy
+        working-directory: mcp-proxy
+        run: uv run mypy --config-file ../mypy.ini src
+
+      - name: Pytest — mcp/sigma
+        working-directory: mcp/sigma
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/sigma
+        working-directory: mcp/sigma
+        run: uv run mypy --config-file ../../mypy.ini src
+
+      - name: Pytest — mcp/mocks/splunk
+        working-directory: mcp/mocks/splunk
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/mocks/splunk
+        working-directory: mcp/mocks/splunk
+        run: uv run mypy --config-file ../../../mypy.ini src
+
+      - name: Pytest — mcp/wazuh
+        working-directory: mcp/wazuh
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/wazuh
+        working-directory: mcp/wazuh
+        run: uv run mypy --config-file ../../mypy.ini src
+
+      - name: Pytest — mcp/evidence
+        working-directory: mcp/evidence
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/evidence
+        working-directory: mcp/evidence
+        run: uv run mypy --config-file ../../mypy.ini src
+
+      - name: Pytest — mcp/agents
+        working-directory: mcp/agents
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/agents
+        working-directory: mcp/agents
+        run: uv run mypy --config-file ../../mypy.ini src
+
+      - name: Pytest — mcp/stratus
+        working-directory: mcp/stratus
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/stratus
+        working-directory: mcp/stratus
+        run: uv run mypy --config-file ../../mypy.ini src
+
+      - name: Pytest — mcp/mocks/falcon
+        working-directory: mcp/mocks/falcon
+        run: uv run pytest -q
+
+      - name: Mypy — mcp/mocks/falcon
+        working-directory: mcp/mocks/falcon
+        run: uv run mypy --config-file ../../../mypy.ini src
+
+      - name: Pytest — vendor mocks (sentinel/chronicle/sentinelone/elastic/caldera)
+        run: |
+          for v in sentinel chronicle sentinelone elastic caldera; do
+            (cd "mcp/mocks/$v" && uv run pytest -q) || exit 1
+          done
+
+      - name: Mypy — vendor mocks
+        run: |
+          for v in sentinel chronicle sentinelone elastic caldera; do
+            (cd "mcp/mocks/$v" && uv run mypy --config-file ../../../mypy.ini src) || exit 1
+          done
+
+      - name: Pytest — apps/conductor
+        working-directory: apps/conductor
+        run: uv run pytest -q
+
+      - name: Mypy — apps/conductor
+        working-directory: apps/conductor
+        run: uv run mypy --config-file ../../mypy.ini src
+
+      - name: Sigma lint hook (smoke)
+        run: uv run python scripts/sigma_pre_commit.py detections/enterprise/windows/execution/win_susp_powershell_encoded_b64.yml
+
+  go:
+    name: Go — vet + test + golangci-lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - name: go vet
+        working-directory: agent
+        run: go vet ./...
+      - name: go test
+        working-directory: agent
+        run: go test ./...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          working-directory: agent
+
+  typescript:
+    name: TS — biome
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: {node-version: "20"}
-      - name: Install & test
-        working-directory: frontend
-        run: |
-          npm ci || npm i
-          npm test
-      - name: ESLint
-        working-directory: frontend
-        run: npm run lint
-
-  docker-build:
-    runs-on: ubuntu-latest
-    needs: [backend, frontend]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build images
-        run: |
-          docker build -f docker/Dockerfile.api -t ghcr.io/${{ github.repository }}/api:${{ github.sha }} .
-          docker build -f docker/Dockerfile.web -t ghcr.io/${{ github.repository }}/web:${{ github.sha }} .
-      - name: Save images
-        run: |
-          docker save ghcr.io/${{ github.repository }}/api:${{ github.sha }} | gzip > api-image.tar.gz
-          docker save ghcr.io/${{ github.repository }}/web:${{ github.sha }} | gzip > web-image.tar.gz
-      - uses: actions/upload-artifact@v4
         with:
-          name: images
-          path: |
-            api-image.tar.gz
-            web-image.tar.gz
+          node-version: "20"
+          cache: pnpm
 
-# If you want to push to GHCR, add a login step and docker push. For now we just save artifacts.
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Biome check
+        run: pnpm -s check
+
+      - name: Web — typecheck + build
+        working-directory: apps/web
+        run: |
+          pnpm typecheck
+          pnpm build
+
+      - name: Web — Playwright (chromium)
+        working-directory: apps/web
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec playwright test

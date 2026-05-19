@@ -1,0 +1,31 @@
+[project]
+name = "catchattack"
+version = "0.0.0"
+description = "CatchAttack v2 — MCP-centric detection engineering platform."
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+# Members are added as their pyproject.toml files land per phase.
+# Phase 0: mcp-proxy.
+# Phase 1: + mcp/sigma
+# Phase 3: + mcp/evidence, mcp/agents
+# Phase 4: + apps/conductor
+members = [
+    "mcp-proxy",
+    "mcp/sigma",
+    "mcp/mocks/splunk",
+    "mcp/mocks/falcon",
+    "mcp/mocks/sentinel",
+    "mcp/mocks/chronicle",
+    "mcp/mocks/sentinelone",
+    "mcp/mocks/elastic",
+    "mcp/mocks/caldera",
+    "mcp/wazuh",
+    "mcp/evidence",
+    "mcp/agents",
+    "mcp/stratus",
+    "apps/conductor",
+]
+
+[tool.ruff]
+extend = "ruff.toml"

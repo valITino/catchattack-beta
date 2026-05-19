@@ -1,0 +1,22 @@
+target-version = "py312"
+line-length = 100
+extend-exclude = ["legacy"]
+
+[lint]
+select = [
+    "E", "F", "W", "I", "B", "UP", "N", "ANN", "S", "C4", "SIM",
+    "RUF", "PL", "PT", "TID", "TRY", "PERF",
+]
+ignore = [
+    "ANN401",
+    "PLR0913",
+    "S101",
+    "TRY003",
+]
+
+[lint.per-file-ignores]
+"**/tests/**" = ["S", "ANN", "PLR2004"]
+"**/*_test.py" = ["S", "ANN", "PLR2004"]
+
+[format]
+quote-style = "double"

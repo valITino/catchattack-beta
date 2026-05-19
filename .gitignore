@@ -7,23 +7,55 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Node
+node_modules/
+.pnpm-store/
+dist/
+dist-ssr/
+.next/
+build/
 *.local
 
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
 # Python
 __pycache__/
 *.py[cod]
 *.egg-info/
+.venv/
 venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# uv
+.uv/
+
+# Go
+agent/dist/
+agent/bin/
+
+# MCP proxy local config + audit log
+mcp-proxy/upstreams.yaml
+mcp-proxy/audit.jsonl
+audit.jsonl
+
+# Env
+.env
+.env.local
+!.env.example
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/.next/
+apps/web/tsconfig.tsbuildinfo

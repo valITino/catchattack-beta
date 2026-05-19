@@ -1,0 +1,161 @@
+# CatchAttack local dev stack.
+#
+# Phase 2 brings up:
+#   - mcp-proxy        the trust-boundary proxy (FastMCP + FastAPI)
+#   - wazuh-indexer    OpenSearch-compatible alert store
+#   - wazuh-manager    Wazuh manager (REST API at :55000)
+#   - splunk           OPTIONAL — set ACCEPT_SPLUNK_LICENSE=yes to start it
+#
+# Phase 5 (`apps/web`) and Phase 6 (LiveKit) extend this file.
+#
+# Usage:
+#   docker compose -f infra/compose.yaml up wazuh-indexer wazuh-manager mcp-proxy
+#
+# Notes:
+#   - Wazuh certs are self-signed in dev; the in-house MCP sets verify_tls=false.
+#   - Splunk requires accepting the EULA per Docker Hub: set ACCEPT_SPLUNK_LICENSE=yes
+#     to enable the splunk service.
+
+name: catchattack-dev
+
+x-wazuh-env: &wazuh-env
+  INDEXER_URL: https://wazuh-indexer:9200
+  INDEXER_USERNAME: ${WAZUH_INDEXER_USER:-admin}
+  INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD:-SecretPassword123}
+
+services:
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.9.0
+    hostname: wazuh-indexer
+    restart: unless-stopped
+    environment:
+      - cluster.name=wazuh-cluster
+      - node.name=wazuh-indexer
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+    healthcheck:
+      test: ["CMD-SHELL", "curl -ks -o /dev/null https://localhost:9200 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.9.0
+    hostname: wazuh-manager
+    restart: unless-stopped
+    depends_on:
+      wazuh-indexer:
+        condition: service_healthy
+    environment:
+      <<: *wazuh-env
+      API_USERNAME: ${WAZUH_MANAGER_USER:-wazuh-wui}
+      API_PASSWORD: ${WAZUH_MANAGER_PASSWORD:-MyS3cr37P450r.*-}
+    ports:
+      - "55000:55000"
+      - "1514:1514/udp"
+      - "1515:1515"
+    volumes:
+      - wazuh-manager-config:/var/ossec/etc
+      - wazuh-manager-logs:/var/ossec/logs
+
+  mcp-proxy:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.proxy
+    restart: unless-stopped
+    depends_on:
+      wazuh-manager:
+        condition: service_started
+    environment:
+      CATCHATTACK_APPROVAL_TOKEN: ${CATCHATTACK_APPROVAL_TOKEN:-}
+      CATCHATTACK_PROXY_CONFIG: /workspace/mcp-proxy/upstreams.example.yaml
+      WAZUH_MANAGER_URL: https://wazuh-manager:55000
+      WAZUH_MANAGER_USER: ${WAZUH_MANAGER_USER:-wazuh-wui}
+      WAZUH_MANAGER_PASSWORD: ${WAZUH_MANAGER_PASSWORD:-MyS3cr37P450r.*-}
+      WAZUH_INDEXER_URL: https://wazuh-indexer:9200
+      WAZUH_INDEXER_USER: ${WAZUH_INDEXER_USER:-admin}
+      WAZUH_INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD:-SecretPassword123}
+      WAZUH_VERIFY_TLS: "0"
+    ports:
+      - "7100:7100"
+
+  splunk:
+    image: splunk/splunk:latest
+    profiles: ["splunk"]
+    restart: unless-stopped
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:-Ch4ngeMe!}
+    ports:
+      - "8000:8000"
+      - "8089:8089"
+    volumes:
+      - splunk-var:/opt/splunk/var
+
+  # Object storage for capture bundles (Phase 3+).
+  # In Phase 3 the evidence MCP defaults to filesystem; flip
+  # EVIDENCE_BACKEND=s3 + the MINIO_* env vars to use this.
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-catchattack}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-Ch4ngeMe!}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9000/minio/health/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+
+  # LiveKit SFU for live emulation streaming (Phase 6).
+  # The Go agent publishes its screen-capture track; browsers subscribe
+  # via /captures/live/<run_id>. Dev keys live in infra/livekit.yaml.
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-devsecretdevsecretdevsecret012345}"
+    ports:
+      - "7880:7880"     # signalling (ws)
+      - "7881:7881"     # TURN/TCP
+      - "50000-50100:50000-50100/udp"  # RTC media
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+
+  # LiveKit Egress records the room to HLS in object storage —
+  # "one pipeline, both outputs" (BUILD_BRIEF.md Phase 6). The recorded
+  # HLS lands in the same MinIO bucket the evidence MCP reads.
+  livekit-egress:
+    image: livekit/egress:latest
+    restart: unless-stopped
+    depends_on:
+      - livekit
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+    volumes:
+      - ./egress.yaml:/etc/egress.yaml:ro
+    cap_add:
+      - SYS_ADMIN
+
+volumes:
+  wazuh-indexer-data:
+  wazuh-manager-config:
+  wazuh-manager-logs:
+  splunk-var:
+  minio-data:

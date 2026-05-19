@@ -75,8 +75,14 @@ class Run:
             self._queue.put_nowait(event)
 
     def close(self) -> None:
-        # Sentinel — SSE consumers stop iterating.
-        with contextlib.suppress(asyncio.QueueFull):
+        # Sentinel — SSE consumers stop iterating. If the queue is full, evict
+        # the oldest event to make room: a dropped sentinel would hang the SSE
+        # stream on queue.get() forever.
+        try:
+            self._queue.put_nowait(None)
+        except asyncio.QueueFull:
+            with contextlib.suppress(asyncio.QueueEmpty):
+                _ = self._queue.get_nowait()
             self._queue.put_nowait(None)
 
     async def subscribe(self) -> asyncio.Queue[StepEvent | None]:

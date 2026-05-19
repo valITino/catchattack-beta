@@ -4,6 +4,7 @@
  * its URL.
  */
 
+import { isSafeId } from "@/lib/conductor";
 import { config } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +14,18 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id } = await params;
-  const upstream = await fetch(`${config.conductorUrl}/workflows/runs/${id}/sse`, {
-    headers: { accept: "text/event-stream" },
-    cache: "no-store",
-  });
+  if (!isSafeId(id)) {
+    return new Response("invalid run id", { status: 400 });
+  }
+  let upstream: Response;
+  try {
+    upstream = await fetch(`${config.conductorUrl}/workflows/runs/${id}/sse`, {
+      headers: { accept: "text/event-stream" },
+      cache: "no-store",
+    });
+  } catch {
+    return new Response("conductor unreachable", { status: 502 });
+  }
   if (!upstream.ok || !upstream.body) {
     return new Response("conductor unreachable", { status: 502 });
   }

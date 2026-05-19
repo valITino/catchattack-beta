@@ -7,6 +7,7 @@
  * server-side.
  */
 
+import { isSafeId } from "@/lib/conductor";
 import { config } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id } = await params;
+  if (!isSafeId(id)) {
+    return new Response("invalid run id", { status: 400 });
+  }
   let upstream: Response;
   try {
     upstream = await fetch(`${config.conductorUrl}/live/${id}/markers/sse`, {

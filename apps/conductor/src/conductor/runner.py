@@ -25,7 +25,8 @@ async def execute(run: Run, deps: WorkflowDeps) -> dict[str, Any]:
         return run.error
     run.status = RunStatus.RUNNING
     try:
-        result = await fn(run, run.inputs, deps)
+        async with deps.mcp.session():
+            result = await fn(run, run.inputs, deps)
     except GateFailedError as exc:
         run.status = RunStatus.FAILED
         run.error = {"code": exc.code, "message": exc.message, "detail": exc.detail}

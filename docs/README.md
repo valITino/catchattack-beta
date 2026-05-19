@@ -1,8 +1,10 @@
 # docs/
 
-Architecture documentation and ADRs.
+Architecture Decision Records.
 
-- `architecture.md` — Mermaid diagrams refreshed at end of each phase.
-- `adr/` — Architecture Decision Records, one per non-obvious choice.
-- `threat_profile.md` — Produced daily by the Conductor's
-  `threat_profile_refresh` workflow (Phase 4+).
+- `adr/` — one ADR per non-obvious choice (0001–0009), in chronological
+  order. ADRs are point-in-time records: they are not edited after a phase
+  lands, they are superseded by later ADRs.
+
+The live architecture overview is the root `README.md`; per-component detail
+lives in each component's own `README.md`.

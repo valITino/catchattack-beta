@@ -35,9 +35,6 @@ var techniqueRE = regexp.MustCompile(`^T\d{4}(\.\d{3})?$`)
 
 // Run validates inputs and dispatches to the platform runner.
 func Run(ctx context.Context, opts Options) error {
-	if !techniqueRE.MatchString(opts.Technique) {
-		return fmt.Errorf("invalid technique %q (want TNNNN or TNNNN.NNN)", opts.Technique)
-	}
 	if opts.TestNumber < 1 {
 		return errors.New("test-number must be >= 1")
 	}
@@ -67,7 +64,14 @@ func Run(ctx context.Context, opts Options) error {
 }
 
 // Argv constructs the platform-appropriate argv for opts.
+//
+// The technique is validated here, at the construction site, so the value
+// interpolated into the Windows `pwsh -Command` string is always a safe
+// ATT&CK id regardless of which entry point built the argv.
 func Argv(opts Options) (string, []string, error) {
+	if !techniqueRE.MatchString(opts.Technique) {
+		return "", nil, fmt.Errorf("invalid technique %q (want TNNNN or TNNNN.NNN)", opts.Technique)
+	}
 	os := opts.OverrideOS
 	if os == "" {
 		os = runtime.GOOS

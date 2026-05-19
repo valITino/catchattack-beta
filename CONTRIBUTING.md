@@ -1,119 +1,83 @@
-
 # Contributing to CatchAttack
 
-Thank you for considering contributing to CatchAttack! This document provides guidelines and instructions for contributing to this project.
+Thanks for contributing. This document covers the workflow, tooling, and
+standards for the CatchAttack v2 tree. Work in `legacy/` is frozen — see
+[`docs/adr/0001-quarantine-legacy-and-monorepo-layout.md`](docs/adr/0001-quarantine-legacy-and-monorepo-layout.md).
 
-## Table of Contents
+## Getting started
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Process](#development-process)
-  - [Branching Strategy](#branching-strategy)
-  - [Commit Messages](#commit-messages)
-  - [Pull Requests](#pull-requests)
-- [Coding Standards](#coding-standards)
-- [Testing](#testing)
-- [Documentation](#documentation)
-- [Issue Reporting](#issue-reporting)
+1. Clone the repository.
+2. Install prerequisites: `uv`, `pnpm`, `make`, Go 1.25+, Docker.
+3. Install workspaces: `make install`.
+4. Confirm a clean baseline: `make verify`.
+5. Create a feature branch off `main`.
 
-## Code of Conduct
+## Development process
 
-This project adheres to a Code of Conduct that all contributors are expected to follow. By participating, you are expected to uphold this code.
+### Branching
 
-## Getting Started
+Development happens on short-lived feature branches cut from `main`; `main`
+is the integration branch and stays releasable. There is no long-lived
+`develop` branch. Name branches with a prefix that matches the change:
 
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR-USERNAME/catchattack-beta.git`
-3. Set up the development environment as described in the README.md
-4. Create a new branch for your changes
+- `feature/` — new functionality
+- `fix/` — bug fixes
+- `refactor/` — restructuring without behaviour change
+- `docs/` — documentation only
 
-## Development Process
+### Commit messages
 
-### Branching Strategy
+- Imperative mood, present tense ("Add X", not "Added X").
+- First line ≤ 72 characters; blank line; body explaining the *why*.
+- Reference issues/PRs in the body.
 
-We use a simplified Git workflow:
+### Pull requests
 
-- `main`: The production branch. Always stable.
-- `develop`: Development branch where features are integrated.
-- Feature branches: Created from `develop` for new features or fixes.
+1. Rebase your branch on the latest `main`.
+2. Run `make verify` locally — it must pass.
+3. Open the PR against `main` and describe the change and its test plan.
+4. Address review feedback.
 
-Name your branches with prefixes:
-- `feature/` for new features
-- `fix/` for bug fixes
-- `refactor/` for code refactoring
-- `docs/` for documentation changes
+## Coding standards
 
-Example: `feature/siem-integration` or `fix/rule-validation`
+The monorepo spans three languages. Each has a pinned toolchain; `make fmt`
+applies formatters and `make verify` enforces them.
 
-### Commit Messages
+| Area | Format + lint | Type check | Tests |
+|---|---|---|---|
+| Python 3.12 (`mcp/`, `mcp-proxy/`, `apps/conductor/`) | `ruff` | `mypy --strict` | `pytest` |
+| TypeScript (`apps/web/`) | `biome` | `tsc` (`pnpm typecheck`) | Playwright |
+| Go 1.25 (`agent/`) | `gofmt` / `golangci-lint` | — | `go test` |
 
-Write clear, concise commit messages following these guidelines:
+Guidelines:
 
-- Use the present tense ("Add feature" not "Added feature")
-- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-- Limit the first line to 72 characters or less
-- Reference issues and pull requests after the first line
-
-Example:
-```
-Add SIEM connection validation
-
-This adds validation for SIEM platform connections to prevent failed deployments.
-Fixes #123
-```
-
-### Pull Requests
-
-1. Update your feature branch with the latest changes from `develop`
-2. Push your branch to your fork
-3. Create a pull request from your branch to the `develop` branch
-4. Fill in the PR template with relevant information
-5. Request a review from maintainers
-6. Address any feedback from reviews
-
-## Coding Standards
-
-- **TypeScript**: Follow TypeScript best practices
-- **React**: Use functional components with hooks
-- **ESLint/Prettier**: Ensure your code passes linting checks
-
-Key guidelines:
-- Use meaningful variable and function names
-- Document complex functions with JSDoc comments
-- Keep components small and focused
-- Follow the project's existing patterns and conventions
-- Use proper types and avoid `any` whenever possible
+- Pydantic models use `ConfigDict(extra="forbid")`.
+- Keep functions small and names meaningful; avoid `any`/`Any` where a
+  concrete type fits.
+- Match existing patterns in the file you are editing.
+- Comment the non-obvious *why*, not the *what*.
 
 ## Testing
 
-All new features and bug fixes should include tests:
+`make test` runs every suite; `make verify` adds install + lint + type
+checks. Per-language entry points:
 
-- Unit tests for utilities and services
-- Component tests for UI components
-- Integration tests for complex workflows
+- `make test-py` — runs `pytest` **inside each package directory**. Run it
+  this way (not bare `pytest` from the repo root): the local `mcp/`
+  directory would otherwise shadow the installed `mcp` SDK on `sys.path`.
+- `make test-go` — `go test ./...` in `agent/`.
+- `make test-ts` — `apps/web` typecheck, production build, and Playwright.
 
-Run tests before submitting a PR:
-```bash
-pytest
-```
+New features and bug fixes should ship with tests.
 
 ## Documentation
 
-Update documentation when adding or modifying features:
+- Update the affected component `README.md` and the root `README.md`.
+- Record non-obvious decisions as a new ADR under `docs/adr/`.
+- Keep code examples and commands in docs runnable.
 
-- Update relevant README sections
-- Add JSDoc comments to functions and components
-- Create or update documentation files in the `docs` folder
-- Include examples for new features
+## Issue reporting
 
-## Issue Reporting
-
-When reporting issues:
-
-1. Check existing issues to avoid duplicates
-2. Use the issue template provided
-3. Include detailed steps to reproduce the issue
-4. Include relevant environment information
-5. Add screenshots or examples when possible
-
-Thank you for contributing to CatchAttack!
+1. Search existing issues first.
+2. Include reproduction steps and environment details.
+3. Attach logs, screenshots, or minimal examples where useful.

@@ -62,3 +62,21 @@ def test_lint_empty_input_is_error() -> None:
     report = lint_sigma("")
     assert not report.ok
     assert any(issue.code == "schema.empty" for issue in report.errors)
+
+
+def test_lint_empty_title_does_not_crash() -> None:
+    # An empty title once raised IndexError on title[0]; lint must never raise.
+    rule = """\
+title: ""
+id: 00000000-0000-0000-0000-000000000002
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith: '\\\\notepad.exe'
+  condition: selection
+level: medium
+"""
+    report = lint_sigma(rule)
+    assert "style.title_capitalisation" not in {issue.code for issue in report.info}

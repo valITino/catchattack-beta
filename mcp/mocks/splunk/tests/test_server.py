@@ -33,6 +33,16 @@ async def test_search_via_mcp_returns_summary(server: object) -> None:
         assert isinstance(payload["samples"], list)
 
 
+async def test_search_invalid_time_range_returns_error(server: object) -> None:
+    async with Client(server) as client:
+        result = await client.call_tool(
+            "search",
+            {"spl": "powershell", "earliest": "not-a-date", "latest": "also-bad"},
+        )
+        payload = _payload(result)
+        assert payload["error"] == "invalid_time_range"
+
+
 async def test_deploy_rule_dry_run_via_mcp(server: object) -> None:
     async with Client(server) as client:
         result = await client.call_tool(

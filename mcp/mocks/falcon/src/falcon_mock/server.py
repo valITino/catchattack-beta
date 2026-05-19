@@ -7,7 +7,7 @@ Conductor or UI changes required (BUILD_BRIEF_ADDENDUM.md §B.2).
 
 Run:
     falcon-mock                          # stdio
-    falcon-mock --transport http --port 9103
+    falcon-mock --transport http --port 9111
 """
 
 from __future__ import annotations
@@ -146,7 +146,7 @@ def main() -> None:
     )
     parser.add_argument("--transport", choices=("stdio", "http"), default="stdio")
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=9103)
+    parser.add_argument("--port", type=int, default=9111)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--version", action="version", version=__version__)
     args = parser.parse_args()

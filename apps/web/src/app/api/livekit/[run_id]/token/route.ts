@@ -4,6 +4,7 @@
  * secret.
  */
 
+import { isSafeId } from "@/lib/conductor";
 import { config } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,9 @@ export async function GET(
   { params }: { params: Promise<{ run_id: string }> },
 ): Promise<Response> {
   const { run_id } = await params;
+  if (!isSafeId(run_id)) {
+    return Response.json({ error: "invalid run_id" }, { status: 400 });
+  }
   let upstream: Response;
   try {
     upstream = await fetch(`${config.conductorUrl}/live/${run_id}/token?identity=viewer`, {

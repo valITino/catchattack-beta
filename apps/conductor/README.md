@@ -7,11 +7,14 @@ workflow.
 ## Surface
 
 ```
-POST  /workflows/{name}/run    → 202 {run_id, status}
-GET   /workflows/runs/{id}     → full Run state (events, result, error)
-GET   /workflows/runs/{id}/sse → Server-Sent Events stream of StepEvents
-GET   /workflows               → list registered workflow names
-GET   /health                  → liveness + workflow registry
+POST  /workflows/{name}/run        → 202 {run_id, status}
+GET   /workflows/runs/{id}         → full Run state (events, result, error)
+GET   /workflows/runs/{id}/sse     → Server-Sent Events stream of StepEvents
+GET   /workflows                   → list registered workflow names
+GET   /live/{run_id}/token         → mint a LiveKit viewer token (Phase 6)
+WS    /live/{run_id}/markers       → live marker stream (Phase 6)
+GET   /live/{run_id}/markers/sse   → SSE form of the marker stream (Phase 6)
+GET   /health                      → liveness + workflow registry
 ```
 
 ## Workflows
@@ -30,7 +33,7 @@ The 11-step loop from `BUILD_BRIEF.md` Phase 4:
 8. `splunk.deploy_rule(dry_run=true)` (or `wazuh.deploy_rule`) — renders conf.
 9. `agents.run_atomic` again — second emulation; receive `capture_id_2`.
 10. `splunk.search` over capture-2's window — must return ≥1 hit.
-11. `pr.open` — drops the rule under `detections/enterprise/<platform>/<tactic>/` and either commits a branch locally or opens a PR via the GitHub MCP.
+11. `pr.open` — drops the rule under `detections/enterprise/` (the Phase 4 demo writes to `windows/execution/`) and either commits a branch locally or opens a PR via the GitHub MCP.
 
 Each gate failure raises `GateFailedError(code, message, detail)` with a
 named code such as `dedupe.near_duplicate`, `fp.too_high`,
@@ -81,12 +84,14 @@ cd apps/conductor
 uv run pytest -q
 ```
 
-Four layers:
+Test layers:
 
 - **`test_clients.py`** — unit tests for the static and production client wrappers.
-- **`test_workflow_closed_loop.py`** — seven scenarios exercising every named gate failure (`preflight.unknown_agent`, `evidence.empty`, `lint.errors`, `dedupe.near_duplicate`, `fp.too_high`, `validation.no_hits`) plus the happy path.
+- **`test_workflow_closed_loop.py`** — scenarios exercising every named gate failure (`preflight.unknown_agent`, `evidence.empty`, `lint.errors`, `dedupe.near_duplicate`, `fp.too_high`, `validation.no_hits`) plus the happy path.
 - **`test_workflow_integration.py`** — wires every in-tree MCP server (sigma, splunk-mock, agents, evidence) into a single in-process FastMCP router and drives the workflow against it. No mocks at the MCP boundary.
 - **`test_api.py`** — FastAPI surface smoke (queue, fetch, 404 on unknown workflow).
+- **`test_live_api.py`** — Phase 6 live endpoints: LiveKit token minting + the marker WebSocket/SSE streams.
+- **`test_livekit.py`** — LiveKit config detection + viewer-token minting unit tests.
 
 ## System prompt
 

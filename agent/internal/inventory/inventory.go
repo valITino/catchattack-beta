@@ -6,6 +6,7 @@ package inventory
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -104,6 +105,9 @@ func nonLoopbackAddresses() []string {
 func listProcesses(ctx context.Context) []Process {
 	procs, err := process.ProcessesWithContext(ctx)
 	if err != nil {
+		// Surface the failure: an empty process list otherwise reads as a
+		// genuinely process-free host and yields a false "no EDR" signal.
+		fmt.Fprintf(os.Stderr, "[inventory] process enumeration failed: %v\n", err)
 		return nil
 	}
 	out := make([]Process, 0, len(procs))

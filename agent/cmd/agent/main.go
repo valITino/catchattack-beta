@@ -9,7 +9,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -146,6 +145,9 @@ func captureSpawnCmd() *cobra.Command {
 				fmt.Println("ffmpeg", args)
 				return nil
 			}
+			if err := os.MkdirAll(outputDir, 0o755); err != nil {
+				return err
+			}
 			return capture.Spawn(cmd.Context(), spec, os.Stderr)
 		},
 	}
@@ -202,6 +204,3 @@ func defaultCertDir() string {
 	}
 	return "./catchattack"
 }
-
-// suppress unused warning when context isn't otherwise referenced in this file.
-var _ = context.Background

@@ -32,6 +32,15 @@ export type Run = {
   error: { code: string; message: string; detail: Record<string, unknown> } | null;
 };
 
+/**
+ * Run and capture ids are server-generated UUID-shaped strings. Reject
+ * anything else so a path segment from a request cannot traverse or
+ * re-target the Conductor URL when interpolated into an upstream path.
+ */
+export function isSafeId(id: string): boolean {
+  return /^[a-zA-Z0-9_-]+$/.test(id);
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${config.conductorUrl}${path}`, {
     cache: "no-store",

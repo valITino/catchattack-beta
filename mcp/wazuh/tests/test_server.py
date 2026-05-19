@@ -103,6 +103,20 @@ async def test_deploy_rule_rejects_non_xml_filename(server: object) -> None:
         assert payload["error"] == "invalid_filename"
 
 
+async def test_deploy_rule_rejects_path_traversal_filename(server: object) -> None:
+    async with Client(server) as c:
+        result = await c.call_tool(
+            "deploy_rule",
+            {
+                "filename": "../../../var/ossec/etc/ossec.xml",
+                "spec": {"rule_id": 100100, "level": 5, "description": "x"},
+                "dry_run": True,
+            },
+        )
+        payload = _payload(result)
+        assert payload["error"] == "invalid_filename"
+
+
 async def test_estimate_fp_rate_via_mcp(server: object) -> None:
     async with Client(server) as c:
         result = await c.call_tool(

@@ -16,10 +16,9 @@ NotYetImplemented skeleton (Phase 4 wires it up).
 from __future__ import annotations
 
 import uuid
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Protocol
+from typing import Protocol
 
 from .models import (
     AgentInfo,
@@ -203,7 +202,3 @@ class GRPCAgentTransport:
 
     def stop_capture(self, capture_id: str) -> CaptureBundleSummary:
         raise NotImplementedError("gRPC agent transport lands in Phase 4")
-
-
-def _kwargs(d: Mapping[str, Any]) -> dict[str, Any]:
-    return dict(d)

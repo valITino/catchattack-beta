@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 from typing import Any
 
 from fastmcp import FastMCP
@@ -30,6 +31,10 @@ from fastmcp import FastMCP
 from . import __version__
 from .client import WazuhClient, WazuhConfig, summarise_fp, summarise_hits
 from .rules import WazuhRuleSpec, render_rule_xml
+
+# A rule filename must be a bare basename ending in .xml — no path separators
+# or traversal, so it cannot escape the manager's rules/files endpoint.
+_RULE_FILENAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.xml$")
 
 
 def _config_from_env() -> WazuhConfig:
@@ -124,8 +129,11 @@ def build_server(client: WazuhClient) -> FastMCP:
         spec: WazuhRuleSpec,
         dry_run: bool = True,
     ) -> dict[str, Any]:
-        if not filename.endswith(".xml"):
-            return {"error": "invalid_filename", "detail": "filename must end with .xml"}
+        if not _RULE_FILENAME_RE.match(filename):
+            return {
+                "error": "invalid_filename",
+                "detail": "filename must be a bare basename ending in .xml",
+            }
         xml = render_rule_xml(spec)
         if dry_run:
             return {

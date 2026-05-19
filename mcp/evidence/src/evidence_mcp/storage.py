@@ -21,7 +21,6 @@ S3 URL when the backend is swapped to S3 (Phase 5).
 from __future__ import annotations
 
 import json
-import time
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -194,6 +193,10 @@ class FilesystemStorage:
 
     # ---- helpers -----------------------------------------------------------
 
+    def events_dir(self, bundle_id: str) -> Path:
+        """Path to a capture's events/ directory. Raises CaptureNotFoundError."""
+        return self._find_dir(bundle_id) / "events"
+
     def _find_dir(self, bundle_id: str) -> Path:
         with self._lock:
             cached = self._index.get(bundle_id)
@@ -229,19 +232,14 @@ class FilesystemStorage:
         )
 
 
-def empty_stats(now: datetime | None = None) -> Stats:
+def empty_stats() -> Stats:
     """Construct an empty Stats — useful for tests and bootstrap captures."""
-    _ = now or datetime.now(tz=UTC)
     return Stats(event_count=0, duration_ms=0, size_bytes=0, top_processes=[])
 
 
 def now_iso() -> str:
     """Seconds-precision UTC ISO8601 — used in synthetic bundles."""
     return datetime.now(tz=UTC).replace(microsecond=0).isoformat()
-
-
-def _epoch_ms() -> int:
-    return int(time.time() * 1000)
 
 
 __all__ = [

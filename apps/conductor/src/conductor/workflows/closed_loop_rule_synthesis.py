@@ -350,7 +350,9 @@ async def closed_loop_rule_synthesis(  # noqa: PLR0915 — 11-step linear workfl
         ),
         "validation.search_failed",
     )
-    hits = search.get("count") or search.get("total_hits") or 0
+    # Splunk's search returns `count`; Wazuh's returns `total_hits`. Use the
+    # key that is present so a legitimate zero is not mistaken for "absent".
+    hits = search["count"] if "count" in search else search.get("total_hits", 0)
     if hits < 1:
         raise GateFailedError(
             "validation.no_hits",

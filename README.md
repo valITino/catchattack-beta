@@ -33,49 +33,64 @@ catchattack/
 ├── apps/
 │   ├── web/                 # Next.js 15 — UI + BFF (Phase 5)
 │   └── conductor/           # Python FastAPI — server-side AI Conductor (Phase 4)
-├── mcp/                     # In-house MCP servers (sigma, evidence, agents, stratus)
+├── mcp/                     # In-house MCP servers (sigma, wazuh, evidence, agents, stratus)
+│   └── mocks/               # Synthetic vendor MCPs (splunk, falcon, sentinel, …)
 ├── mcp-proxy/               # Trust-boundary proxy — namespacing, dry-run, audit
 ├── agent/                   # Go cross-platform endpoint agent (Phase 3)
 ├── packages/
 │   ├── schemas/             # JSON Schema source of truth
 │   └── ui/                  # Shared shadcn components
 ├── infra/
-│   ├── compose.yaml         # Local dev stack (Phase 1+)
-│   └── terraform/           # Production infra (later)
+│   ├── compose.yaml         # Local dev stack — Wazuh, MinIO, LiveKit, proxy
+│   ├── Dockerfile.proxy     # Container image for the MCP proxy
+│   ├── livekit.yaml         # LiveKit SFU dev config
+│   └── egress.yaml          # LiveKit Egress (HLS recording) config
 ├── detections/              # Detection-as-code (Sigma YAML), see addendum §C
-├── docs/                    # ADRs, architecture diagrams
+├── docs/                    # ADRs
 └── legacy/                  # FROZEN — old code preserved for reference
 ```
 
 Official vendor MCPs (Falcon, Sentinel, Splunk-in-Splunk, Google SecOps, S1,
 Elastic Agent Builder, Caldera plugin, MITRE ATT&CK, GitHub) are **not**
-rebuilt in this tree — they are integrated via `mcp-proxy/upstreams.yaml`.
+rebuilt in this tree — they are registered as upstreams in
+`mcp-proxy/upstreams.yaml` (copy it from `upstreams.example.yaml`). Until
+credentials are supplied each routes to a synthetic mock under `mcp/mocks/`.
 
-## Quickstart (Phase 0)
+## Quickstart
 
-Prereqs: `uv`, `pnpm`, `make`. Python 3.12, Node 20.
+Prereqs: `uv`, `pnpm`, `make`, Go 1.25+, and Docker (for `make dev`).
+Python 3.12, Node 20.
 
 ```bash
 make install   # uv sync + pnpm install
-make verify    # workspace installs + format check
+make verify    # install + format-check + lint + mypy + tests (Python, Go, web)
 ```
 
-Phase 1 capabilities:
+### Local dev stack
+
+```bash
+cp mcp-proxy/upstreams.example.yaml mcp-proxy/upstreams.yaml   # optional, then edit
+make dev       # docker compose -f infra/compose.yaml up — Wazuh, MinIO, LiveKit, proxy
+```
+
+### Running pieces individually
 
 ```bash
 # Sigma MCP server on stdio (what Claude Desktop launches)
 uv run sigma-mcp
-
-# Or expose it via streamable-HTTP
+# …or over streamable-HTTP
 uv run sigma-mcp --transport http --port 7110
 
-# Run the proxy (mounts sigma + future upstreams; MCP endpoint at /mcp,
-# health at /health, dry-run preview at /policy/preview)
+# The MCP proxy — namespaced routing, dry-run + approval policy, audit log.
+# MCP endpoint at /mcp, health at /health, dry-run preview at /policy/preview.
 cd mcp-proxy && uv run uvicorn mcp_proxy.app:app --port 7100
-```
 
-`make dev` becomes meaningful from Phase 2 onward when `infra/compose.yaml`
-adds Splunk Free and Wazuh.
+# The Conductor — FastAPI workflow orchestrator
+cd apps/conductor && uv run conductor --port 7200
+
+# The web UI + BFF
+cd apps/web && pnpm dev   # http://localhost:3000
+```
 
 ## legacy/ is frozen
 

@@ -27,22 +27,33 @@ def _deps(tmp_path, *, with_hub: bool = True) -> WorkflowDeps:  # type: ignore[n
 def test_live_token_503_when_livekit_unconfigured(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     for var in ("LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"):
         monkeypatch.delenv(var, raising=False)
+    registry = RunRegistry()
+    run = registry.create("closed_loop_rule_synthesis", {})
+    app = create_app(registry, _deps(tmp_path))
+    with TestClient(app) as client:
+        r = client.get(f"/live/{run.id}/token")
+        assert r.status_code == 503
+
+
+def test_live_token_404_when_run_unknown(tmp_path) -> None:  # type: ignore[no-untyped-def]
     app = create_app(RunRegistry(), _deps(tmp_path))
     with TestClient(app) as client:
-        r = client.get("/live/run-1/token")
-        assert r.status_code == 503
+        r = client.get("/live/nonexistent/token")
+        assert r.status_code == 404
 
 
 def test_live_token_minted_when_configured(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setenv("LIVEKIT_URL", "ws://livekit.test:7880")
     monkeypatch.setenv("LIVEKIT_API_KEY", "devkey")
     monkeypatch.setenv("LIVEKIT_API_SECRET", "devsecretdevsecretdevsecret012345")
-    app = create_app(RunRegistry(), _deps(tmp_path))
+    registry = RunRegistry()
+    run = registry.create("closed_loop_rule_synthesis", {})
+    app = create_app(registry, _deps(tmp_path))
     with TestClient(app) as client:
-        r = client.get("/live/run-1/token", params={"identity": "viewer-bob"})
+        r = client.get(f"/live/{run.id}/token", params={"identity": "viewer-bob"})
         assert r.status_code == 200
         body = r.json()
-        assert body["room"] == "run-run-1"
+        assert body["room"] == f"run-{run.id}"
         assert body["url"] == "ws://livekit.test:7880"
         assert body["token"].count(".") == 2  # header.payload.signature
 

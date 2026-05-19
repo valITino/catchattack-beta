@@ -7,7 +7,6 @@ sees firehose-scale rollups.
 
 from __future__ import annotations
 
-import hashlib
 import random
 import re
 from collections import Counter
@@ -91,11 +90,6 @@ _BENIGN_FRAGMENTS = [
 ]
 
 
-def _seed_for(*parts: object) -> int:
-    h = hashlib.blake2s(repr(parts).encode(), digest_size=4).digest()
-    return int.from_bytes(h, "big")
-
-
 def _generate_events(seed: int, days: int) -> list[dict[str, Any]]:
     # Synthetic test data; not a security boundary.
     rng = random.Random(seed)  # noqa: S311
@@ -142,8 +136,11 @@ def _spl_to_regex(spl: str) -> re.Pattern[str]:
         if not groups:
             continue
         token = groups[-1]
-        # Skip noise tokens.
-        if token.lower() in {"search", "index", "earliest", "latest"} and "=" in match.group(0):
+        # Drop SPL directives (the `search` command, `index=`/time modifiers):
+        # for a field=value match the field name is what identifies noise, and
+        # for a bare token the token itself is.
+        field_name = match.group(1) or match.group(3)
+        if (field_name or token).lower() in {"search", "index", "earliest", "latest"}:
             continue
         parts.append(re.escape(token))
     if not parts:

@@ -19,15 +19,14 @@ Every tool call goes through this proxy, which enforces:
 5. **Rate limit + circuit breaker** per upstream.
 6. **Tenant scoping** (forward-looking — single-tenant default in Phase 0).
 
-## Status
+## Upstreams
 
-Phase 0: skeleton with namespacing + audit log + dry-run + approval-token
-checks. Routes to no upstreams yet.
-
-Phase 1: routes to `sigma` (in-house). Conductor and Claude Desktop both speak
-to the proxy.
-
-Phases 2+: each new vendor MCP added by registering it in `upstreams.yaml`.
+Upstreams are declared in `upstreams.yaml` — copy it from the committed
+`upstreams.example.yaml` and edit for local dev. The registry currently
+covers twelve: the in-house `sigma`, `wazuh`, `evidence`, `agents`, and
+`stratus` servers, plus `splunk`, `falcon`, `sentinel`, `chronicle`,
+`sentinelone`, `elastic`, and `caldera` — each routed to a synthetic mock
+under `mcp/mocks/` until its `mode` is flipped to `real`.
 
 ## Approval-token flow
 
@@ -53,8 +52,6 @@ deployment fronts it with the web app's auth layer (Auth.js OIDC).
 ```
 cd mcp-proxy
 uv sync
+cp upstreams.example.yaml upstreams.yaml   # then edit as needed
 uv run uvicorn mcp_proxy.app:app --port 7100
 ```
-
-(Full implementation lands in Phase 1; Phase 0 ships the config loader,
-audit log, and the policy engine with passthrough tests.)

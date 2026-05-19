@@ -12,6 +12,7 @@ MCP tools through the proxy (`:7100/mcp/`).
 | `/coverage` | MITRE ATT&CK matrix coloured by rule count × validation | walks `detections/` |
 | `/captures` | List capture bundles | `evidence.list_captures` |
 | `/captures/[id]` | HLS player + timeline marker lanes + top processes | `evidence.get_capture` |
+| `/captures/live/[run_id]` | Live emulation viewer — LiveKit video + marker stream | `conductor:/live/*` + LiveKit |
 | `/rules` | Detection-as-code browser | walks `detections/` |
 | `/rules/prs` | Conductor-drafted PR queue with FP report, SPL, reasoning | reads `detections/_meta/conductor_runs/` |
 | `/agents` | Fleet view | `agents.list_agents` |
@@ -20,6 +21,7 @@ MCP tools through the proxy (`:7100/mcp/`).
 
 All upstream calls live in `src/lib/`:
 
+- `lib/config.ts` — server-side env config (Conductor + proxy URLs, auth mode, approval token).
 - `lib/conductor.ts` — typed fetch wrapper around `/workflows/*`.
 - `lib/mcp.ts` — minimal JSON-RPC client for the proxy's `/mcp` endpoint.
 - `lib/mitre.ts` — seeded ATT&CK tactics + filesystem coverage lookup.
@@ -73,6 +75,6 @@ pnpm exec playwright install chromium --with-deps  # once
 pnpm exec playwright test
 ```
 
-The Playwright suite (`tests/routes.spec.ts`) renders all six brief-mandated
-routes against a production build. Conductor and MCP proxy are NOT running
+The Playwright suite (`tests/routes.spec.ts`) renders the primary routes
+against a production build. The Conductor and MCP proxy are NOT running
 during the test; each route exercises its empty/unreachable state.

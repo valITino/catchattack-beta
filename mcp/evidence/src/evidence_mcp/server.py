@@ -113,10 +113,10 @@ def build_server(storage: FilesystemStorage) -> FastMCP:
         limit: int = 100,
     ) -> dict[str, Any]:
         try:
-            d = storage._find_dir(capture_id)
+            events_dir = storage.events_dir(capture_id)
         except CaptureNotFoundError as exc:
             return {"error": "capture_not_found", "detail": str(exc)}
-        return _query(d, filter or {}, min(limit, _QUERY_HARD_CAP)).model_dump(mode="json")
+        return _query(events_dir, filter or {}, min(limit, _QUERY_HARD_CAP)).model_dump(mode="json")
 
     @mcp.tool(
         name="get_artifact_url",
@@ -195,7 +195,7 @@ def _parse_dt(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
-def _query(capture_dir: Path, filt: dict[str, Any], limit: int) -> EventQueryResult:
+def _query(events_dir: Path, filt: dict[str, Any], limit: int) -> EventQueryResult:
     """Filter events from the JSONL stream — used by `query_events`.
 
     Accepts the addendum's filter keys: process_name, parent_name,
@@ -210,7 +210,6 @@ def _query(capture_dir: Path, filt: dict[str, Any], limit: int) -> EventQueryRes
 
     # Open the sysmon stream, falling back to auditd. Operate-and-handle
     # rather than exists()-then-open (avoids a TOCTOU stat race).
-    events_dir = capture_dir / "events"
     fh = None
     for name in ("sysmon.jsonl", "auditd.jsonl"):
         try:

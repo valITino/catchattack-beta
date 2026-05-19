@@ -95,14 +95,16 @@ class PolicyMiddleware(Middleware):
             params["dry_run"] = True
             message.arguments = params
 
+        forwarded_ok = False
         try:
             result = await call_next(context)
+            forwarded_ok = True
         finally:
             self._audit.record(
                 caller=self._caller_id(context),
                 tool=tool_name,
                 params=params,
-                result={"forwarded": True},
+                result={"forwarded": forwarded_ok},
                 latency_ms=int((time.perf_counter() - start) * 1000),
                 dry_run=bool(params.get("dry_run", False)) or decision.dry_run_enforced,
                 approval_token_id="present" if approval else None,

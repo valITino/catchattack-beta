@@ -35,16 +35,28 @@ class RunRequest(BaseModel):
     inputs: dict[str, Any]
 
 
-_background_tasks: set[asyncio.Task[Any]] = set()
-
-
 def create_app(  # noqa: PLR0915 — one nested def per route; splitting hides the surface
     registry: RunRegistry, deps: WorkflowDeps
 ) -> FastAPI:
+    # Per-app set of in-flight workflow tasks: keeps each task referenced so it
+    # is not garbage-collected mid-run, and lets the lifespan cancel them on
+    # shutdown instead of abandoning runs.
+    background_tasks: set[asyncio.Task[Any]] = set()
+
+    @contextlib.asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            for task in background_tasks:
+                task.cancel()
+            await asyncio.gather(*background_tasks, return_exceptions=True)
+
     app = FastAPI(
         title="CatchAttack Conductor",
         version="0.1.0",
         description="Autonomous detection-engineering workflows.",
+        lifespan=lifespan,
     )
 
     @app.get("/health")
@@ -64,8 +76,8 @@ def create_app(  # noqa: PLR0915 — one nested def per route; splitting hides t
         # endpoint returns the final state. Hold a reference so the task is
         # not garbage-collected before completion.
         task = asyncio.create_task(execute(run, deps))
-        _background_tasks.add(task)
-        task.add_done_callback(_background_tasks.discard)
+        background_tasks.add(task)
+        task.add_done_callback(background_tasks.discard)
         return {"run_id": run.id, "status": run.status.value}
 
     @app.get("/workflows/runs/{run_id}")
@@ -90,6 +102,8 @@ def create_app(  # noqa: PLR0915 — one nested def per route; splitting hides t
 
         The web BFF calls this; the browser never sees the LiveKit secret.
         """
+        if registry.get(run_id) is None:
+            raise HTTPException(404, detail="run not found")
         config = LiveKitConfig.from_env()
         if not config.configured:
             raise HTTPException(503, detail="LiveKit is not configured")

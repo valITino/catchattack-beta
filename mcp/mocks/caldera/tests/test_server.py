@@ -70,6 +70,19 @@ async def test_run_ability_dry_run(server: object) -> None:
         assert payload["technique_id"] == "T1059.001"
 
 
+async def test_run_ability_real_executes(server: object) -> None:
+    async with Client(server) as c:
+        payload = _payload(
+            await c.call_tool(
+                "run_ability",
+                {"ability_id": "c1cd6388-3ced-48c7-a511-0434c6ba8f48", "dry_run": False},
+            )
+        )
+        assert payload["executed"] is True
+        assert payload["link_id"] is not None
+        assert payload["technique_id"] == "T1059.001"
+
+
 async def test_run_ability_unknown_returns_error(server: object) -> None:
     async with Client(server) as c:
         payload = _payload(await c.call_tool("run_ability", {"ability_id": "nope"}))

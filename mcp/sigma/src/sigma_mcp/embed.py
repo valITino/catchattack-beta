@@ -46,7 +46,9 @@ def cosine(a: list[float], b: list[float]) -> float:
     if na == 0.0 or nb == 0.0:
         return 0.0
     sim = dot / (math.sqrt(na) * math.sqrt(nb))
-    # Clamp; cosine sim is in [-1, 1] but our vectors are nonneg so it's [0, 1].
+    # Signed-hash vectors can yield a negative cosine for anti-correlated
+    # rules; clamp to [0, 1] since dedupe treats anti-correlation as "not
+    # similar" rather than as a meaningful signal.
     return max(0.0, min(1.0, sim))
 
 
@@ -100,14 +102,11 @@ class HashEmbedder:
         return vec
 
     def _add(self, vec: list[float], token: str) -> None:
+        # Signed hashing trick: the sign bit halves systematic collision bias.
         h = hashlib.blake2s(token.encode("utf-8"), digest_size=8).digest()
         idx = int.from_bytes(h[:4], "big") % self.dim
         sign = 1.0 if (h[4] & 1) else -1.0
         vec[idx] += sign
-        # Take absolute value at the end so cosine stays non-negative.
-
-    def __post_init__(self) -> None:  # pragma: no cover — slots prevents this firing
-        pass
 
 
 # ---------------------------------------------------------------------------

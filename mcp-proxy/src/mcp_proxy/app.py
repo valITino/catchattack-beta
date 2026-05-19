@@ -10,6 +10,7 @@ Run:
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 from pathlib import Path
@@ -26,6 +27,8 @@ from .router import build_router
 CONFIG_ENV = "CATCHATTACK_PROXY_CONFIG"
 DEFAULT_CONFIG_PATH = "upstreams.yaml"
 
+log = logging.getLogger(__name__)
+
 
 class PreviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -41,6 +44,12 @@ def _load() -> tuple[ProxyConfig, PolicyEngine, AuditLog]:
         path = Path(__file__).resolve().parents[2] / "upstreams.example.yaml"
     config = load_config(path)
     approval = os.environ.get(config.approval_token_env)
+    if not approval:
+        log.warning(
+            "%s is unset — destructive tool calls can only run as dry_run; "
+            "no approval-token override is possible until it is configured",
+            config.approval_token_env,
+        )
     engine = PolicyEngine(config, approval_token=approval)
     audit = AuditLog(config.audit_log_path)
     return config, engine, audit

@@ -33,10 +33,10 @@ intel indicators. Field shapes follow the Falcon API so a flip to
 
 ```bash
 uv run falcon-mock                        # stdio
-uv run falcon-mock --transport http --port 9103
+uv run falcon-mock --transport http --port 9111
 ```
 
-Proxy wiring (`upstreams.yaml`):
+Proxy wiring (`upstreams.yaml`, copied from `upstreams.example.yaml`):
 
 ```yaml
 falcon:

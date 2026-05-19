@@ -4,7 +4,7 @@
 #   make fmt     — format Python (ruff) and TS (biome)
 #   make verify  — install deps, format-check, type-check, tests
 #   make test    — run all tests
-#   make dev     — local dev stack (placeholder until Phase 1 lands)
+#   make dev     — bring up the local dev stack (docker compose)
 #
 # Phases progressively flesh these out. Do NOT chain phase work into this file
 # until the brief greenlights it.
@@ -19,8 +19,8 @@ help:
 	@echo "  fmt-check  Check formatting only (CI)"
 	@echo "  lint       Ruff + Biome lint"
 	@echo "  test       Run all tests"
-	@echo "  verify     Install + format-check + lint + test (Phase 0 = install + fmt-check)"
-	@echo "  dev        Local dev stack (added Phase 1+)"
+	@echo "  verify     Install + format-check + lint + mypy + tests (Python, Go, web)"
+	@echo "  dev        Bring up the local dev stack (docker compose)"
 
 # -----------------------------------------------------------------------------
 # Install
@@ -136,7 +136,7 @@ verify: install fmt-check lint test-py test-mypy test-go test-ts
 # -----------------------------------------------------------------------------
 
 dev:
-	@echo "[dev] No services to run yet. infra/compose.yaml lands in Phase 1."
+	docker compose -f infra/compose.yaml up
 
 # -----------------------------------------------------------------------------
 # Clean

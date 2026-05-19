@@ -50,7 +50,7 @@ def _style_checks(  # noqa: PLR0912 — branching is the point: each check is it
                     path="title",
                 )
             )
-        if not title[0].isupper():
+        if title and not title[0].isupper():
             info.append(
                 LintIssue(
                     severity="info",

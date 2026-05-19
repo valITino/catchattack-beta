@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Any, Protocol
 
 from fastmcp import Client
@@ -24,6 +24,14 @@ class MCPClient(Protocol):
     """Surface used by the Conductor's workflows."""
 
     async def call(self, dotted_tool: str, params: dict[str, Any]) -> dict[str, Any]: ...
+
+    def session(self) -> AbstractAsyncContextManager[None]:
+        """Hold one upstream connection open for the duration of a run.
+
+        The runner enters this around a workflow so its tool calls reuse a
+        single connection instead of reconnecting per call.
+        """
+        ...
 
 
 def _to_underscore(dotted: str) -> str:
@@ -90,6 +98,11 @@ class StaticMCPClient:
     def __init__(self) -> None:
         self._handlers: list[tuple[str, dict[str, Any], dict[str, Any] | Exception]] = []
         self._calls: list[tuple[str, dict[str, Any]]] = []
+
+    @asynccontextmanager
+    async def session(self) -> AsyncIterator[None]:
+        """No-op session — the static client holds no connection."""
+        yield
 
     def respond_to(
         self,

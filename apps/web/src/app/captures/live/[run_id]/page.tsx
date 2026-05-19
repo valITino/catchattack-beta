@@ -4,9 +4,9 @@
  * Server component shell: fetches the run record so we know its status,
  * then hands off to the <LiveView> client component which:
  *   - subscribes to the LiveKit room for sub-second video,
- *   - subscribes to the Conductor's /live/{run_id}/markers WebSocket,
+ *   - subscribes to the Conductor's marker SSE stream (proxied by the BFF),
  *   - renders an append-only timeline,
- *   - auto-redirects to /captures/[id] when the run completes.
+ *   - auto-redirects to the recorded run view (/runs/[run_id]) on completion.
  */
 
 import { Badge } from "@/components/Badge";

@@ -75,6 +75,8 @@ export async function currentSession(): Promise<Session> {
       expires: new Date(Date.now() + 86_400_000).toISOString(),
     } as Session;
   }
-  // In github/email mode we'd redirect; the layout handles that.
+  // In github/email mode an unauthenticated request has no user; the caller
+  // decides whether to redirect. Route-level enforcement is not yet wired —
+  // dev mode is the supported path until Phase 6+ auth lands.
   return { user: undefined, expires: new Date().toISOString() } as Session;
 }
